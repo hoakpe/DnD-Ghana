@@ -1547,18 +1547,25 @@
         // ============================================================
 
         // 1. LOGO — Replace the URL with your own logo image path.
-        const LOGO_URL = 'images/dnd 3.png'; // e.g., 'images/logo.png'
+        const LOGO_URL = 'images/dnd 3.png';
 
         // 2. WHATSAPP NUMBER (with country code, no + sign)
         const WHATSAPP_NUMBER = '917082819336';
 
-        // 3. HERO MEDIA — Array of images/videos with ken-burns motion.
+        // 3. HERO MEDIA — 4 Videos + 4 Images with ken-burns motion on images.
+        //    Replace the src paths with your own media files.
         const HERO_MEDIA = [
-            //{ type: 'video', src: 'https://picsum.photos/seed/marketing1/1600/900' },
-           // { type: 'image', src: 'https://picsum.photos/seed/advert2/1600/900' },
-           // { type: 'image', src: 'https://picsum.photos/seed/creative3/1600/900' },
-           // { type: 'image', src: 'https://picsum.photos/seed/brand4/1600/900' },
-             { type: 'video', src: 'Videos/danady ad design.mp4' }
+            // === 4 VIDEOS ===
+            { type: 'video', src: 'Videos/boy typing.mp4' },
+            { type: 'video', src: 'Videos/danady ad design.mp4' },
+            //{ type: 'video', src: 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_1mb.mp4' },
+            //{ type: 'video', src: 'https://sample-videos.com/video321/mp4/720/big_buck_bunny_720p_2mb.mp4' },
+
+            // === 4 IMAGES (ken-burns motion applied via CSS) ===
+            //{ type: 'image', src: 'https://picsum.photos/seed/hero1/1600/900' },
+            //{ type: 'image', src: 'https://picsum.photos/seed/hero2/1600/900' },
+            //{ type: 'image', src: 'https://picsum.photos/seed/hero3/1600/900' },
+            //{ type: 'image', src: 'https://picsum.photos/seed/hero4/1600/900' }
         ];
 
         // 4. PORTFOLIO DATA (will be doubled automatically for infinite loop)
@@ -1665,7 +1672,7 @@
         }
         setLogo();
 
-        // ---- HERO SLIDESHOW with ken-burns motion ----
+        // ---- HERO SLIDESHOW with ken-burns motion on images ----
         const heroMedia = document.getElementById('heroMedia');
         let heroSlides = [];
         let heroIndex = 0;
@@ -1711,6 +1718,7 @@
                 heroSlides.forEach(s => s.classList.remove('active'));
                 heroIndex = (heroIndex + 1) % heroSlides.length;
                 heroSlides[heroIndex].classList.add('active');
+                // Restart ken-burns animation for the newly active image
                 const img = heroSlides[heroIndex].querySelector('img');
                 if (img) {
                     img.style.animation = 'none';
@@ -1725,17 +1733,15 @@
         // ---- PORTFOLIO CAROUSEL: Infinite Loop, No Scrollbar, Faster Speed ----
         const carousel = document.getElementById('portfolioCarousel');
         let autoScrollInterval = null;
-        const AUTO_SCROLL_DELAY = 2500; // Faster: 2.5 seconds
+        const AUTO_SCROLL_DELAY = 2500;
 
         function renderPortfolio() {
-            // Double the data for seamless infinite loop
             const doubledData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
             carousel.innerHTML = '';
 
             doubledData.forEach((item, index) => {
                 const card = document.createElement('div');
                 card.className = 'portfolio-item';
-                // Add a unique data attribute for debugging if needed
                 card.dataset.index = index;
 
                 const mediaWrap = document.createElement('div');
@@ -1779,12 +1785,10 @@
 
         renderPortfolio();
 
-        // Calculate the max scroll for the original set (half of total)
         function getMaxScroll() {
             return carousel.scrollWidth / 2;
         }
 
-        // Start auto-scroll
         function startAutoScroll() {
             if (autoScrollInterval) clearInterval(autoScrollInterval);
             autoScrollInterval = setInterval(() => {
@@ -1807,7 +1811,6 @@
             }
         }
 
-        // Manual arrow controls
         const leftBtn = document.getElementById('scrollLeft');
         const rightBtn = document.getElementById('scrollRight');
 
@@ -1818,20 +1821,15 @@
             const itemWidth = firstItem.offsetWidth + 30;
             const maxScroll = getMaxScroll();
             let target = carousel.scrollLeft + direction * itemWidth;
-
-            // Infinite loop boundaries
             if (target < 0) target = maxScroll - itemWidth;
             if (target >= maxScroll) target = 0;
-
             carousel.scrollTo({ left: target, behavior: 'smooth' });
-            // Restart auto-scroll after user interaction
             setTimeout(startAutoScroll, 5000);
         }
 
         leftBtn.addEventListener('click', function() { scrollCarousel(-1); });
         rightBtn.addEventListener('click', function() { scrollCarousel(1); });
 
-        // Scroll event listener for infinite loop reset (instant)
         carousel.addEventListener('scroll', function() {
             const maxScroll = getMaxScroll();
             if (carousel.scrollLeft >= maxScroll) {
@@ -1839,14 +1837,12 @@
             }
         });
 
-        // Pause auto-scroll when user manually scrolls (via touch/mouse)
         carousel.addEventListener('scroll', function() {
             stopAutoScroll();
             clearTimeout(carousel._restartTimer);
             carousel._restartTimer = setTimeout(startAutoScroll, 5000);
         });
 
-        // Start the auto-scroll initially
         startAutoScroll();
 
         // ---- CONTACT FORM → WHATSAPP ----
