@@ -393,7 +393,7 @@
             50% { transform: translateX(-50%) translateY(8px); }
         }
 
-        /* ===== PORTFOLIO — FIXED ===== */
+        /* ===== PORTFOLIO — CLICK TO EXPAND ===== */
         .portfolio {
             padding: 100px 0 80px;
             background: #f0f4f9;
@@ -411,7 +411,6 @@
             cursor: default;
         }
 
-        /* Scrollable container — flex-start prevents cards from stretching */
         .portfolio-carousel {
             display: flex;
             gap: 30px;
@@ -423,13 +422,12 @@
             padding: 10px 4px 20px 4px;
             scrollbar-width: none;
             -ms-overflow-style: none;
-            align-items: flex-start;  /* CRITICAL: stops cards from stretching */
+            align-items: flex-start;
         }
         .portfolio-carousel::-webkit-scrollbar {
             display: none;
         }
 
-        /* Each card — align-self: flex-start prevents stretching */
         .portfolio-item {
             flex: 0 0 320px;
             max-width: 320px;
@@ -441,12 +439,15 @@
             transition: transform 0.4s ease, box-shadow 0.4s ease;
             display: flex;
             flex-direction: column;
-            cursor: default;
+            cursor: pointer; /* clickable */
             position: relative;
-            align-self: flex-start;  /* CRITICAL: stops card from stretching */
+            align-self: flex-start;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
         }
 
-        .portfolio-item:hover {
+        /* Active state – clicked */
+        .portfolio-item.active {
             transform: translateY(-10px) scale(1.02);
             box-shadow: 0 20px 60px rgba(0,0,0,0.15);
             z-index: 2;
@@ -500,7 +501,7 @@
             text-transform: uppercase;
         }
 
-        /* Description — hidden, appears ONLY on hover of that specific card */
+        /* Description – hidden by default, shown only when .active */
         .portfolio-item .item-body .description {
             max-height: 0;
             opacity: 0;
@@ -511,7 +512,7 @@
             font-size: 0.95rem;
             line-height: 1.6;
         }
-        .portfolio-item:hover .item-body .description {
+        .portfolio-item.active .item-body .description {
             max-height: 200px;
             opacity: 1;
             margin-top: 10px;
@@ -810,7 +811,7 @@
         </div>
     </section>
 
-    <!-- ===== PORTFOLIO — FIXED (only selected card expands) ===== -->
+    <!-- ===== PORTFOLIO — CLICK TO EXPAND ===== -->
     <section class="portfolio" id="portfolio">
         <div class="container">
             <div class="portfolio-header">
@@ -1042,7 +1043,7 @@
         buildHeroSlides();
 
         // ============================================================
-        //  PORTFOLIO — AUTO-SCROLL + ARROWS (no transform conflicts)
+        //  PORTFOLIO — CLICK TO EXPAND (toggle active)
         // ============================================================
         const carousel = document.getElementById('portfolioCarousel');
         let autoScrollInterval = null;
@@ -1093,9 +1094,29 @@
                 card.appendChild(body);
                 carousel.appendChild(card);
             });
+
+            // ---- ADD CLICK EVENT TO EACH CARD ----
+            document.querySelectorAll('.portfolio-item').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    // If this card is already active, close it
+                    if (this.classList.contains('active')) {
+                        this.classList.remove('active');
+                    } else {
+                        // Close any other open card first (only one open at a time)
+                        document.querySelectorAll('.portfolio-item.active').forEach(active => {
+                            active.classList.remove('active');
+                        });
+                        // Open this card
+                        this.classList.add('active');
+                    }
+                });
+
+                // Also allow closing by tapping outside? Not needed.
+            });
         }
         buildCarousel();
 
+        // ---- AUTO‑SCROLL (unchanged) ----
         function getCardWidth() {
             const first = carousel.querySelector('.portfolio-item');
             if (!first) return 350;
@@ -1129,6 +1150,7 @@
         wrapper.addEventListener('mouseenter', stopAutoScroll);
         wrapper.addEventListener('mouseleave', startAutoScroll);
 
+        // Also pause when hovering cards (optional, but we'll keep)
         document.addEventListener('mouseover', function(e) {
             const card = e.target.closest('.portfolio-item');
             if (card && wrapper.contains(card)) {
@@ -1146,6 +1168,7 @@
             }
         });
 
+        // ---- ARROWS ----
         const leftBtn = document.getElementById('scrollLeft');
         const rightBtn = document.getElementById('scrollRight');
 
@@ -1164,6 +1187,7 @@
         leftBtn.addEventListener('click', () => moveCarousel(-1));
         rightBtn.addEventListener('click', () => moveCarousel(1));
 
+        // ---- MANUAL SCROLL DETECTION ----
         carousel.addEventListener('scroll', function() {
             if (!carousel._programmaticScroll) {
                 stopAutoScroll();
