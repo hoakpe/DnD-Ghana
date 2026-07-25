@@ -393,7 +393,7 @@
             50% { transform: translateX(-50%) translateY(8px); }
         }
 
-        /* ===== PORTFOLIO - 360 SMOOTH CONTINUOUS ===== */
+        /* ===== PORTFOLIO — FIXED ===== */
         .portfolio {
             padding: 100px 0 80px;
             background: #f0f4f9;
@@ -409,40 +409,30 @@
             padding: 20px 0;
             background: #f0f4f9;
             cursor: default;
-            touch-action: pan-y;
         }
 
-        /* The track that scrolls continuously */
-        .portfolio-track {
+        /* Scrollable container — uses native scroll, no transform conflicts */
+        .portfolio-carousel {
             display: flex;
             gap: 30px;
-            will-change: transform;
-            transition: none;
-            width: max-content;
+            overflow-x: auto;
+            overflow-y: visible;
+            scroll-behavior: smooth;
+            -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
+            padding: 10px 4px 20px 4px;
+            scrollbar-width: none; /* Firefox */
+            -ms-overflow-style: none; /* IE/Edge */
         }
-
-        /* Animation for smooth 360 continuous scroll */
-        @keyframes scroll360 {
-            0% {
-                transform: translateX(0);
-            }
-            100% {
-                transform: translateX(-50%);
-            }
-        }
-
-        .portfolio-track.animating {
-            animation: scroll360 25s linear infinite;
-        }
-
-        .portfolio-track.paused {
-            animation-play-state: paused;
+        .portfolio-carousel::-webkit-scrollbar {
+            display: none;
         }
 
         /* Each card */
         .portfolio-item {
             flex: 0 0 320px;
             max-width: 320px;
+            scroll-snap-align: start;
             background: var(--white);
             border-radius: 12px;
             overflow: hidden;
@@ -452,7 +442,6 @@
             flex-direction: column;
             cursor: default;
             position: relative;
-            scroll-snap-align: start;
         }
 
         .portfolio-item:hover {
@@ -547,6 +536,7 @@
             align-items: center;
             justify-content: center;
             font-family: 'Candara', 'Segoe UI', sans-serif;
+            user-select: none;
         }
         .carousel-arrows button:hover {
             background: var(--light-blue);
@@ -627,7 +617,7 @@
         .footer-social a:hover { color: var(--light-blue); }
         .footer-copy { font-size: 0.85rem; color: rgba(255,255,255,0.3); }
 
-        /* ----- RESPONSIVE - mobile first fixes ----- */
+        /* ----- RESPONSIVE ----- */
         @media (max-width: 1024px) {
             .hero-content h1 { font-size: 3.4rem; }
             .services-grid { grid-template-columns: repeat(2, 1fr); }
@@ -637,7 +627,6 @@
             .portfolio-item { flex: 0 0 280px; max-width: 280px; }
         }
         @media (max-width: 768px) {
-            /* Navigation */
             .nav-links {
                 position: fixed; top: 0; right: -100%; width: 70%; max-width: 320px; height: 100vh;
                 background: var(--white); flex-direction: column; padding: 80px 36px 40px; gap: 20px;
@@ -675,8 +664,7 @@
             .footer-social { justify-content: center; }
 
             .portfolio-header .section-header { text-align: center; }
-
-            /* ***** MOBILE PORTFOLIO CARD SIZE & ARROWS ***** */
+            /* Mobile card size */
             .portfolio-item {
                 flex: 0 0 70%;
                 max-width: 70%;
@@ -686,7 +674,6 @@
                 height: 54px;
                 font-size: 1.5rem;
             }
-
             .nav-logo .logo-text { font-size: 0.55rem; }
             .nav-logo .logo-mark { width: 38px; height: 38px; font-size: 1rem; }
         }
@@ -704,7 +691,7 @@
             .team-card { padding: 24px 20px; }
             .project-card { padding: 24px 20px; }
             .contact-detail .value { font-size: 1rem; }
-
+            /* Mobile card size */
             .portfolio-item {
                 flex: 0 0 85%;
                 max-width: 85%;
@@ -823,7 +810,7 @@
         </div>
     </section>
 
-    <!-- ===== PORTFOLIO — 360 SMOOTH CONTINUOUS ===== -->
+    <!-- ===== PORTFOLIO — FIXED ===== -->
     <section class="portfolio" id="portfolio">
         <div class="container">
             <div class="portfolio-header">
@@ -836,8 +823,8 @@
             </div>
 
             <div class="portfolio-carousel-wrapper">
-                <div class="portfolio-track animating" id="portfolioTrack">
-                    <!-- Items injected by JS (doubled for seamless loop) -->
+                <div class="portfolio-carousel" id="portfolioCarousel">
+                    <!-- Items injected by JS -->
                 </div>
             </div>
 
@@ -1055,17 +1042,16 @@
         buildHeroSlides();
 
         // ============================================================
-        //  PORTFOLIO — SMOOTH 360 CONTINUOUS SCROLL
-        //  with touch drag support
+        //  PORTFOLIO — NATIVE SCROLL + AUTO-SCROLL (NO TRANSFORM CONFLICT)
         // ============================================================
-        const track = document.getElementById('portfolioTrack');
-        const wrapper = document.querySelector('.portfolio-carousel-wrapper');
+        const carousel = document.getElementById('portfolioCarousel');
+        let autoScrollInterval = null;
+        const AUTO_SCROLL_DELAY = 3000; // ms between steps
 
-        // Build the track with doubled data
-        function buildTrack() {
-            track.innerHTML = '';
-            const doubled = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
-            doubled.forEach(item => {
+        // Build the carousel items (single set, not doubled)
+        function buildCarousel() {
+            carousel.innerHTML = '';
+            PORTFOLIO_DATA.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'portfolio-item';
 
@@ -1105,28 +1091,53 @@
 
                 card.appendChild(mediaWrap);
                 card.appendChild(body);
-                track.appendChild(card);
+                carousel.appendChild(card);
             });
         }
-        buildTrack();
+        buildCarousel();
+
+        // Get width of one card + gap
+        function getCardWidth() {
+            const first = carousel.querySelector('.portfolio-item');
+            if (!first) return 350;
+            return first.offsetWidth + 30;
+        }
+
+        // Auto-scroll: move one card at a time, loop infinitely
+        function autoScrollStep() {
+            const cardWidth = getCardWidth();
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+            let current = carousel.scrollLeft;
+            let next = current + cardWidth;
+            if (next >= maxScroll) {
+                next = 0; // loop back to start
+            }
+            carousel.scrollTo({ left: next, behavior: 'smooth' });
+        }
+
+        function startAutoScroll() {
+            if (autoScrollInterval) return;
+            autoScrollInterval = setInterval(autoScrollStep, AUTO_SCROLL_DELAY);
+        }
+
+        function stopAutoScroll() {
+            if (autoScrollInterval) {
+                clearInterval(autoScrollInterval);
+                autoScrollInterval = null;
+            }
+        }
 
         // ---- HOVER TO PAUSE ----
-        function pauseAnimation() {
-            track.classList.add('paused');
-        }
+        const wrapper = document.querySelector('.portfolio-carousel-wrapper');
 
-        function resumeAnimation() {
-            track.classList.remove('paused');
-        }
-
-        wrapper.addEventListener('mouseenter', pauseAnimation);
-        wrapper.addEventListener('mouseleave', resumeAnimation);
+        wrapper.addEventListener('mouseenter', stopAutoScroll);
+        wrapper.addEventListener('mouseleave', startAutoScroll);
 
         // Also pause when hovering individual cards
         document.addEventListener('mouseover', function(e) {
             const card = e.target.closest('.portfolio-item');
             if (card && wrapper.contains(card)) {
-                pauseAnimation();
+                stopAutoScroll();
             }
         });
 
@@ -1135,108 +1146,52 @@
             if (card && wrapper.contains(card)) {
                 const related = e.relatedTarget;
                 if (!related || !wrapper.contains(related)) {
-                    resumeAnimation();
+                    startAutoScroll();
                 }
             }
         });
 
-        // ---- TOUCH DRAG SUPPORT ----
-        let startX = 0;
-        let currentX = 0;
-        let isDragging = false;
-        let startTranslate = 0;
-
-        function getCurrentTranslateX() {
-            const computed = getComputedStyle(track);
-            const transform = computed.transform;
-            if (transform === 'none') return 0;
-            const matrix = new WebKitCSSMatrix(transform);
-            return matrix.m41 || 0;
-        }
-
-        function setTranslateX(value) {
-            track.style.transform = `translateX(${value}px)`;
-        }
-
-        wrapper.addEventListener('touchstart', function(e) {
-            const touch = e.touches[0];
-            startX = touch.clientX;
-            isDragging = true;
-            startTranslate = getCurrentTranslateX();
-            pauseAnimation(); // pause while dragging
-            track.style.transition = 'none'; // disable transition for smooth drag
-        }, { passive: true });
-
-        wrapper.addEventListener('touchmove', function(e) {
-            if (!isDragging) return;
-            const touch = e.touches[0];
-            currentX = touch.clientX;
-            const delta = currentX - startX;
-            let newTranslate = startTranslate + delta;
-            // Clamp to limits for seamless loop
-            const totalWidth = track.scrollWidth / 2;
-            const maxLeft = 0;
-            const minLeft = -totalWidth;
-            // Allow overshoot but we'll correct on touchend
-            // For better feel, we can allow some overshoot and then snap
-            setTranslateX(newTranslate);
-        }, { passive: true });
-
-        wrapper.addEventListener('touchend', function(e) {
-            if (!isDragging) return;
-            isDragging = false;
-            // Calculate if we moved enough to snap to a card
-            const delta = currentX - startX;
-            const cardWidth = getCardWidth();
-            // Determine direction and snap
-            let currentTranslate = getCurrentTranslateX();
-            const totalWidth = track.scrollWidth / 2;
-            // Snap to nearest card position
-            let target = Math.round(currentTranslate / cardWidth) * cardWidth;
-            // Clamp
-            if (target > 0) target = -cardWidth;
-            if (target < -totalWidth) target = -totalWidth + cardWidth;
-            // Apply smooth transition
-            track.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            setTranslateX(target);
-            // Resume animation after transition
-            clearTimeout(track._resumeTimer);
-            track._resumeTimer = setTimeout(() => {
-                track.style.transition = '';
-                resumeAnimation();
-            }, 500);
-        }, { passive: true });
-
-        // ---- ARROWS: Move one card at a time ----
+        // ---- ARROWS: move one card forward/backward ----
         const leftBtn = document.getElementById('scrollLeft');
         const rightBtn = document.getElementById('scrollRight');
 
-        function getCardWidth() {
-            const first = track.querySelector('.portfolio-item');
-            if (!first) return 350;
-            return first.offsetWidth + 30;
-        }
-
-        function shiftTrack(direction) {
-            pauseAnimation();
+        function moveCarousel(direction) {
+            stopAutoScroll();
             const cardWidth = getCardWidth();
-            const currentX = getCurrentTranslateX();
-            const totalWidth = track.scrollWidth / 2;
-            let newX = currentX + direction * cardWidth;
-            if (newX > 0) newX = -totalWidth + cardWidth;
-            if (newX < -totalWidth) newX = -cardWidth;
-            // Smooth transition
-            track.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
-            setTranslateX(newX);
-            clearTimeout(track._resumeTimer);
-            track._resumeTimer = setTimeout(() => {
-                track.style.transition = '';
-                resumeAnimation();
-            }, 500);
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+            let target = carousel.scrollLeft + direction * cardWidth;
+            if (target < 0) target = 0;
+            if (target > maxScroll) target = 0; // loop to start
+            carousel.scrollTo({ left: target, behavior: 'smooth' });
+            // Resume auto-scroll after delay
+            clearTimeout(carousel._resumeTimer);
+            carousel._resumeTimer = setTimeout(startAutoScroll, 5000);
         }
 
-        leftBtn.addEventListener('click', () => shiftTrack(-1));
-        rightBtn.addEventListener('click', () => shiftTrack(1));
+        leftBtn.addEventListener('click', () => moveCarousel(-1));
+        rightBtn.addEventListener('click', () => moveCarousel(1));
+
+        // ---- Pause auto-scroll when user manually scrolls (touch/mouse drag) ----
+        carousel.addEventListener('scroll', function() {
+            // Only stop if the user is actively scrolling (not programmatic)
+            // We detect this by checking if there's a pending resume timer
+            if (!carousel._programmaticScroll) {
+                stopAutoScroll();
+                clearTimeout(carousel._userScrollTimer);
+                carousel._userScrollTimer = setTimeout(startAutoScroll, 5000);
+            }
+            carousel._programmaticScroll = false;
+        });
+
+        // Override scrollTo to mark programmatic scrolls
+        const originalScrollTo = carousel.scrollTo.bind(carousel);
+        carousel.scrollTo = function(options) {
+            carousel._programmaticScroll = true;
+            originalScrollTo(options);
+        };
+
+        // Start auto-scroll
+        startAutoScroll();
 
         // ---- CONTACT FORM → WHATSAPP ----
         document.getElementById('contactForm').addEventListener('submit', function(e) {
