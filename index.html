@@ -440,10 +440,10 @@
             overflow: hidden;
             box-shadow: 0 20px 60px rgba(0,0,0,0.12);
             background: #0b1a26;
-            aspect-ratio: 16 / 9;  /* wider and taller than before */
+            aspect-ratio: 16 / 9;
             cursor: pointer;
             transition: transform 0.3s ease, box-shadow 0.3s ease;
-            min-height: 260px; /* ensures a minimum size on very small screens */
+            min-height: 260px;
         }
         .hot-spot:hover {
             transform: scale(1.02);
@@ -545,7 +545,6 @@
             opacity: 0.8;
             font-weight: 400;
         }
-        /* Hide play overlay for images (always show a subtle overlay) */
         .hot-spot.is-image .play-overlay {
             opacity: 1;
             pointer-events: none;
@@ -614,7 +613,7 @@
             cursor: grab;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: pan-y;  /* ensures touch scrolling works */
+            touch-action: pan-y;
         }
         .portfolio-carousel-wrapper:active {
             cursor: grabbing;
@@ -1087,10 +1086,9 @@
         const WHATSAPP_NUMBER = '917082819336';
 
         // ----- HOT SPOT CONFIGURATION -----
-        // Set type to 'video' or 'image' and provide the correct src
         const HOT_SPOT_CONFIG = {
-            type: 'image',        // 'video' or 'image'
-            src: 'images/Coding flyer.png',  // path to your video or image
+            type: 'image',
+            src: 'images/Coding flyer.png',
             badge: '🔥 Hot Update',
             title: 'New Campaign Launch',
             description: 'Watch our latest creative project in action'
@@ -1225,7 +1223,6 @@
             const isVideo = HOT_SPOT_CONFIG.type === 'video';
             hotSpot.className = 'hot-spot' + (isVideo ? '' : ' is-image');
 
-            // Media element
             let mediaEl;
             if (isVideo) {
                 mediaEl = document.createElement('video');
@@ -1237,8 +1234,6 @@
                 source.src = HOT_SPOT_CONFIG.src;
                 source.type = 'video/mp4';
                 mediaEl.appendChild(source);
-                // Fallback: if video fails, show poster
-                mediaEl.poster = '';
                 mediaEl.setAttribute('preload', 'metadata');
             } else {
                 mediaEl = document.createElement('img');
@@ -1247,14 +1242,10 @@
                 mediaEl.loading = 'lazy';
             }
 
-            // Badge
             const badge = document.createElement('div');
             badge.className = 'hot-badge';
             badge.textContent = HOT_SPOT_CONFIG.badge.replace('🔥', '').trim();
-            badge.style.setProperty('--badge-content', '"🔥"');
-            // We handle the fire emoji via CSS ::before
 
-            // Play overlay (only for video)
             const overlay = document.createElement('div');
             overlay.className = 'play-overlay' + (isVideo ? '' : ' visible');
             overlay.id = 'playOverlay';
@@ -1267,7 +1258,6 @@
                 overlay.appendChild(playBtn);
             }
 
-            // Title
             const title = document.createElement('div');
             title.className = 'hot-title';
             title.innerHTML = `
@@ -1275,13 +1265,11 @@
                     <p>${HOT_SPOT_CONFIG.description}</p>
                 `;
 
-            // Assemble
             hotSpot.appendChild(mediaEl);
             hotSpot.appendChild(badge);
             hotSpot.appendChild(overlay);
             hotSpot.appendChild(title);
 
-            // ---- Video Controls ----
             if (isVideo) {
                 const video = document.getElementById('hotVideo');
                 const playBtn = document.getElementById('playBtn');
@@ -1313,7 +1301,6 @@
                     overlayEl.classList.add('visible');
                 });
 
-                // Hover show/hide overlay
                 video.addEventListener('mouseenter', () => {
                     if (isPlaying) overlayEl.classList.add('visible');
                 });
@@ -1326,15 +1313,14 @@
         buildHotSpot();
 
         // ============================================================
-        //  PORTFOLIO — SMOOTH CONTINUOUS 360° SCROLL
-        //  with touch support (pause on touch)
+        //  PORTFOLIO — SMOOTH CONTINUOUS 360° SCROLL (with touch support)
         // ============================================================
         const carousel = document.getElementById('portfolioCarousel');
         let smoothScrollInterval = null;
         const SCROLL_STEP = 1.5;
         const FRAME_DELAY = 20;
         let setWidth = 0;
-        let isUserTouching = false;
+        let isUserInteracting = false; // touch or drag
 
         function buildCarousel() {
             const tripleData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
@@ -1382,7 +1368,7 @@
 
             document.querySelectorAll('.portfolio-item').forEach(card => {
                 card.addEventListener('click', function(e) {
-                    if (isDragging) return;
+                    if (isUserInteracting) return;
                     stopSmoothScroll();
                     if (this.classList.contains('active')) {
                         this.classList.remove('active');
@@ -1402,6 +1388,8 @@
         function startSmoothScroll() {
             if (smoothScrollInterval) return;
             smoothScrollInterval = setInterval(() => {
+                // Do NOT scroll if user is interacting
+                if (isUserInteracting) return;
                 let next = carousel.scrollLeft + SCROLL_STEP;
                 if (next >= setWidth * 2) {
                     next = setWidth;
@@ -1417,30 +1405,29 @@
             }
         }
 
-        // ---- TOUCH SUPPORT ----
+        // ---- TOUCH EVENTS ----
         carousel.addEventListener('touchstart', () => {
-            isUserTouching = true;
+            isUserInteracting = true;
             stopSmoothScroll();
         }, { passive: true });
 
         carousel.addEventListener('touchend', () => {
-            isUserTouching = false;
+            isUserInteracting = false;
             clearTimeout(carousel._touchResumeTimer);
             carousel._touchResumeTimer = setTimeout(() => {
-                if (!isUserTouching) {
+                if (!isUserInteracting) {
                     startSmoothScroll();
                 }
             }, 3000);
         }, { passive: true });
 
-        // Also cancel if touch is cancelled
         carousel.addEventListener('touchcancel', () => {
-            isUserTouching = false;
+            isUserInteracting = false;
             clearTimeout(carousel._touchResumeTimer);
             carousel._touchResumeTimer = setTimeout(startSmoothScroll, 3000);
         }, { passive: true });
 
-        // ---- MOUSE DRAG (desktop) ----
+        // ---- MOUSE DRAG ----
         let isDragging = false;
         let startX = 0;
         let startScrollLeft = 0;
@@ -1453,6 +1440,7 @@
             startScrollLeft = carousel.scrollLeft;
             dragDistance = 0;
             carousel.style.cursor = 'grabbing';
+            isUserInteracting = true;
             stopSmoothScroll();
             e.preventDefault();
         });
@@ -1471,7 +1459,13 @@
             if (startX !== undefined) {
                 if (isDragging) {
                     clearTimeout(carousel._dragResumeTimer);
-                    carousel._dragResumeTimer = setTimeout(startSmoothScroll, 4000);
+                    carousel._dragResumeTimer = setTimeout(() => {
+                        isUserInteracting = false;
+                        startSmoothScroll();
+                    }, 4000);
+                } else {
+                    // If no drag, it was a click – the card click handler will handle it
+                    isUserInteracting = false;
                 }
                 startX = undefined;
                 carousel.style.cursor = 'grab';
@@ -1485,19 +1479,31 @@
                 carousel.style.cursor = 'grab';
                 if (isDragging) {
                     clearTimeout(carousel._dragResumeTimer);
-                    carousel._dragResumeTimer = setTimeout(startSmoothScroll, 4000);
+                    carousel._dragResumeTimer = setTimeout(() => {
+                        isUserInteracting = false;
+                        startSmoothScroll();
+                    }, 4000);
                 }
                 setTimeout(() => { isDragging = false; }, 100);
             }
         });
 
+        // ---- HOVER PAUSE ----
         const wrapper = document.querySelector('.portfolio-carousel-wrapper');
-        wrapper.addEventListener('mouseenter', stopSmoothScroll);
-        wrapper.addEventListener('mouseleave', startSmoothScroll);
+        wrapper.addEventListener('mouseenter', () => {
+            isUserInteracting = true;
+            stopSmoothScroll();
+        });
+        wrapper.addEventListener('mouseleave', () => {
+            isUserInteracting = false;
+            startSmoothScroll();
+        });
 
+        // Also pause when hovering cards individually
         document.addEventListener('mouseover', function(e) {
             const card = e.target.closest('.portfolio-item');
             if (card && wrapper.contains(card)) {
+                isUserInteracting = true;
                 stopSmoothScroll();
             }
         });
@@ -1507,6 +1513,7 @@
             if (card && wrapper.contains(card)) {
                 const related = e.relatedTarget;
                 if (!related || !wrapper.contains(related)) {
+                    isUserInteracting = false;
                     startSmoothScroll();
                 }
             }
