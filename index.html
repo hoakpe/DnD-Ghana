@@ -393,7 +393,7 @@
             50% { transform: translateX(-50%) translateY(8px); }
         }
 
-        /* ===== PORTFOLIO — CLICK TO EXPAND ===== */
+        /* ===== PORTFOLIO — 360° CONTINUOUS ROTATION ===== */
         .portfolio {
             padding: 100px 0 80px;
             background: #f0f4f9;
@@ -408,30 +408,28 @@
             overflow: hidden;
             padding: 20px 0;
             background: #f0f4f9;
-            cursor: default;
+            cursor: grab;
+            touch-action: none;
+            user-select: none;
+            -webkit-user-select: none;
+        }
+        .portfolio-carousel-wrapper:active {
+            cursor: grabbing;
         }
 
-        .portfolio-carousel {
+        .portfolio-track {
             display: flex;
             gap: 30px;
-            overflow-x: auto;
-            overflow-y: visible;
-            scroll-behavior: smooth;
-            -webkit-overflow-scrolling: touch;
-            scroll-snap-type: x mandatory;
-            padding: 10px 4px 20px 4px;
-            scrollbar-width: none;
-            -ms-overflow-style: none;
-            align-items: flex-start;
-        }
-        .portfolio-carousel::-webkit-scrollbar {
-            display: none;
+            width: max-content;
+            will-change: transform;
+            transition: none;
+            touch-action: none;
         }
 
+        /* Each card */
         .portfolio-item {
             flex: 0 0 320px;
             max-width: 320px;
-            scroll-snap-align: start;
             background: var(--white);
             border-radius: 12px;
             overflow: hidden;
@@ -439,14 +437,13 @@
             transition: transform 0.4s ease, box-shadow 0.4s ease;
             display: flex;
             flex-direction: column;
-            cursor: pointer; /* clickable */
+            cursor: pointer;
             position: relative;
             align-self: flex-start;
             user-select: none;
             -webkit-tap-highlight-color: transparent;
         }
 
-        /* Active state – clicked */
         .portfolio-item.active {
             transform: translateY(-10px) scale(1.02);
             box-shadow: 0 20px 60px rgba(0,0,0,0.15);
@@ -501,7 +498,6 @@
             text-transform: uppercase;
         }
 
-        /* Description – hidden by default, shown only when .active */
         .portfolio-item .item-body .description {
             max-height: 0;
             opacity: 0;
@@ -518,7 +514,7 @@
             margin-top: 10px;
         }
 
-        /* Arrows */
+        /* Arrows — hidden on mobile, visible on desktop */
         .carousel-arrows {
             display: flex;
             gap: 12px;
@@ -546,6 +542,13 @@
             border-color: var(--light-blue);
             color: var(--white);
             transform: scale(1.05);
+        }
+
+        /* Hide arrows on mobile */
+        @media (max-width: 768px) {
+            .carousel-arrows {
+                display: none !important;
+            }
         }
 
         /* ----- OTHER SECTIONS (unchanged) ----- */
@@ -671,13 +674,10 @@
                 flex: 0 0 70%;
                 max-width: 70%;
             }
-            .carousel-arrows button {
-                width: 54px;
-                height: 54px;
-                font-size: 1.5rem;
-            }
             .nav-logo .logo-text { font-size: 0.55rem; }
             .nav-logo .logo-mark { width: 38px; height: 38px; font-size: 1rem; }
+
+            /* Arrows hidden on mobile (already hidden via display:none) */
         }
         @media (max-width: 480px) {
             .hero-content h1 { font-size: 2.1rem; }
@@ -696,11 +696,6 @@
             .portfolio-item {
                 flex: 0 0 85%;
                 max-width: 85%;
-            }
-            .carousel-arrows button {
-                width: 60px;
-                height: 60px;
-                font-size: 1.8rem;
             }
         }
     </style>
@@ -811,7 +806,7 @@
         </div>
     </section>
 
-    <!-- ===== PORTFOLIO — CLICK TO EXPAND ===== -->
+    <!-- ===== PORTFOLIO — 360° CONTINUOUS ROTATION ===== -->
     <section class="portfolio" id="portfolio">
         <div class="container">
             <div class="portfolio-header">
@@ -823,13 +818,13 @@
                 </div>
             </div>
 
-            <div class="portfolio-carousel-wrapper">
-                <div class="portfolio-carousel" id="portfolioCarousel">
-                    <!-- Items injected by JS -->
+            <div class="portfolio-carousel-wrapper" id="carouselWrapper">
+                <div class="portfolio-track" id="portfolioTrack">
+                    <!-- Items injected by JS (duplicated for 360° loop) -->
                 </div>
             </div>
 
-            <div class="carousel-arrows">
+            <div class="carousel-arrows" id="carouselArrows">
                 <button id="scrollLeft" aria-label="Scroll left">‹</button>
                 <button id="scrollRight" aria-label="Scroll right">›</button>
             </div>
@@ -1043,16 +1038,34 @@
         buildHeroSlides();
 
         // ============================================================
-        //  PORTFOLIO — CLICK TO EXPAND (toggle active)
+        //  PORTFOLIO — 360° CONTINUOUS ROTATION (JS controlled)
+        //  Uses requestAnimationFrame for smooth animation
+        //  Touch drag + mouse drag supported
+        //  Arrows on desktop only
         // ============================================================
-        const carousel = document.getElementById('portfolioCarousel');
-        let autoScrollInterval = null;
-        const AUTO_SCROLL_DELAY = 3000;
+        const track = document.getElementById('portfolioTrack');
+        const wrapperEl = document.getElementById('carouselWrapper');
+        const leftBtn = document.getElementById('scrollLeft');
+        const rightBtn = document.getElementById('scrollRight');
 
-        // Build the carousel items
-        function buildCarousel() {
-            carousel.innerHTML = '';
-            PORTFOLIO_DATA.forEach(item => {
+        let isAnimating = true;
+        let animationId = null;
+        let currentTranslate = 0;
+        let speed = 0.6; // pixels per frame (60fps ≈ 36px/s)
+        let isDragging = false;
+        let startX = 0;
+        let startTranslate = 0;
+        let cardWidth = 350; // will be calculated
+        let totalWidth = 0;
+        let isPaused = false;
+        let lastTime = 0;
+
+        // Build the track with duplicated items (2x for seamless loop)
+        function buildTrack() {
+            track.innerHTML = '';
+            // Double the data for seamless loop
+            const doubled = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
+            doubled.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'portfolio-item';
 
@@ -1060,7 +1073,7 @@
                 mediaWrap.className = 'media-wrap';
                 if (item.media) {
                     const isVideo = /\.(mp4|webm|mov|ogg)$/i.test(item.media) ||
-                                    item.media.includes('commondatastorage.googleapis.com');
+                        item.media.includes('commondatastorage.googleapis.com');
                     if (isVideo) {
                         const vid = document.createElement('video');
                         vid.src = item.media;
@@ -1092,118 +1105,255 @@
 
                 card.appendChild(mediaWrap);
                 card.appendChild(body);
-                carousel.appendChild(card);
+                track.appendChild(card);
             });
 
-            // ---- ADD CLICK EVENT TO EACH CARD ----
+            // Calculate card width after render
+            setTimeout(() => {
+                updateDimensions();
+            }, 50);
+        }
+
+        function updateDimensions() {
+            const firstCard = track.querySelector('.portfolio-item');
+            if (firstCard) {
+                cardWidth = firstCard.offsetWidth + 30; // width + gap
+            }
+            totalWidth = track.scrollWidth / 2;
+        }
+
+        // ---- ANIMATION LOOP ----
+        function animate(timestamp) {
+            if (!isAnimating) return;
+
+            if (!isPaused && !isDragging) {
+                currentTranslate -= speed;
+                // Wrap around for seamless 360° loop
+                if (currentTranslate <= -totalWidth) {
+                    currentTranslate += totalWidth;
+                }
+                if (currentTranslate > 0) {
+                    currentTranslate -= totalWidth;
+                }
+                applyTransform(currentTranslate);
+            }
+
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function applyTransform(value) {
+            track.style.transform = `translateX(${value}px)`;
+        }
+
+        function startAnimation() {
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+            isAnimating = true;
+            animationId = requestAnimationFrame(animate);
+        }
+
+        function stopAnimation() {
+            isAnimating = false;
+            if (animationId) {
+                cancelAnimationFrame(animationId);
+                animationId = null;
+            }
+        }
+
+        function pauseAnimation() {
+            isPaused = true;
+        }
+
+        function resumeAnimation() {
+            isPaused = false;
+            if (!isAnimating) {
+                startAnimation();
+            }
+        }
+
+        // ---- TOUCH DRAG ----
+        function handleDragStart(clientX) {
+            stopAnimation();
+            isDragging = true;
+            startX = clientX;
+            startTranslate = currentTranslate;
+            track.style.transition = 'none';
+            pauseAnimation();
+        }
+
+        function handleDragMove(clientX) {
+            if (!isDragging) return;
+            const delta = clientX - startX;
+            let newTranslate = startTranslate + delta;
+
+            // Wrap around for seamless loop
+            if (newTranslate <= -totalWidth) {
+                newTranslate += totalWidth;
+                startTranslate += totalWidth;
+            }
+            if (newTranslate > 0) {
+                newTranslate -= totalWidth;
+                startTranslate -= totalWidth;
+            }
+
+            currentTranslate = newTranslate;
+            applyTransform(newTranslate);
+        }
+
+        function handleDragEnd() {
+            if (!isDragging) return;
+            isDragging = false;
+
+            // Snap to nearest card
+            const snapped = Math.round(currentTranslate / cardWidth) * cardWidth;
+            let target = snapped;
+
+            // Clamp to loop range
+            if (target <= -totalWidth) {
+                target += totalWidth;
+            }
+            if (target > 0) {
+                target -= totalWidth;
+            }
+
+            currentTranslate = target;
+            track.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            applyTransform(target);
+
+            // Resume animation after snap
+            setTimeout(() => {
+                track.style.transition = 'none';
+                resumeAnimation();
+                startAnimation();
+            }, 450);
+        }
+
+        // ---- TOUCH EVENTS ----
+        wrapperEl.addEventListener('touchstart', (e) => {
+            const touch = e.touches[0];
+            handleDragStart(touch.clientX);
+        }, { passive: true });
+
+        wrapperEl.addEventListener('touchmove', (e) => {
+            const touch = e.touches[0];
+            handleDragMove(touch.clientX);
+        }, { passive: true });
+
+        wrapperEl.addEventListener('touchend', () => {
+            handleDragEnd();
+        }, { passive: true });
+
+        wrapperEl.addEventListener('touchcancel', () => {
+            handleDragEnd();
+        }, { passive: true });
+
+        // ---- MOUSE DRAG (desktop) ----
+        let mouseDown = false;
+
+        wrapperEl.addEventListener('mousedown', (e) => {
+            if (e.button !== 0) return;
+            mouseDown = true;
+            handleDragStart(e.clientX);
+            e.preventDefault();
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!mouseDown) return;
+            handleDragMove(e.clientX);
+        });
+
+        document.addEventListener('mouseup', () => {
+            if (mouseDown) {
+                mouseDown = false;
+                handleDragEnd();
+            }
+        });
+
+        // ---- HOVER PAUSE ----
+        wrapperEl.addEventListener('mouseenter', () => {
+            pauseAnimation();
+        });
+
+        wrapperEl.addEventListener('mouseleave', () => {
+            if (!isDragging) {
+                resumeAnimation();
+                if (!isAnimating) startAnimation();
+            }
+        });
+
+        // ---- ARROWS (desktop only) ----
+        function shiftTrack(direction) {
+            stopAnimation();
+            pauseAnimation();
+
+            const step = cardWidth * direction;
+            let target = currentTranslate + step;
+
+            // Wrap around
+            if (target <= -totalWidth) {
+                target += totalWidth;
+            }
+            if (target > 0) {
+                target -= totalWidth;
+            }
+
+            currentTranslate = target;
+            track.style.transition = 'transform 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            applyTransform(target);
+
+            setTimeout(() => {
+                track.style.transition = 'none';
+                resumeAnimation();
+                startAnimation();
+            }, 550);
+        }
+
+        leftBtn.addEventListener('click', () => shiftTrack(-1));
+        rightBtn.addEventListener('click', () => shiftTrack(1));
+
+        // ---- CLICK TO EXPAND CARDS ----
+        function setupCardClick() {
             document.querySelectorAll('.portfolio-item').forEach(card => {
                 card.addEventListener('click', function(e) {
-                    // If this card is already active, close it
+                    // Don't trigger if dragging
+                    if (isDragging) return;
+
                     if (this.classList.contains('active')) {
                         this.classList.remove('active');
                     } else {
-                        // Close any other open card first (only one open at a time)
                         document.querySelectorAll('.portfolio-item.active').forEach(active => {
                             active.classList.remove('active');
                         });
-                        // Open this card
                         this.classList.add('active');
                     }
                 });
-
-                // Also allow closing by tapping outside? Not needed.
             });
         }
-        buildCarousel();
 
-        // ---- AUTO‑SCROLL (unchanged) ----
-        function getCardWidth() {
-            const first = carousel.querySelector('.portfolio-item');
-            if (!first) return 350;
-            return first.offsetWidth + 30;
-        }
+        // ---- INIT ----
+        buildTrack();
+        // Re-run dimensions after a moment
+        setTimeout(() => {
+            updateDimensions();
+            // Set initial position at the start of the loop
+            currentTranslate = 0;
+            applyTransform(0);
+            // Start animation
+            startAnimation();
+            // Setup click events after cards are rendered
+            setupCardClick();
+        }, 100);
 
-        function autoScrollStep() {
-            const cardWidth = getCardWidth();
-            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
-            let current = carousel.scrollLeft;
-            let next = current + cardWidth;
-            if (next >= maxScroll) {
-                next = 0;
-            }
-            carousel.scrollTo({ left: next, behavior: 'smooth' });
-        }
-
-        function startAutoScroll() {
-            if (autoScrollInterval) return;
-            autoScrollInterval = setInterval(autoScrollStep, AUTO_SCROLL_DELAY);
-        }
-
-        function stopAutoScroll() {
-            if (autoScrollInterval) {
-                clearInterval(autoScrollInterval);
-                autoScrollInterval = null;
-            }
-        }
-
-        const wrapper = document.querySelector('.portfolio-carousel-wrapper');
-        wrapper.addEventListener('mouseenter', stopAutoScroll);
-        wrapper.addEventListener('mouseleave', startAutoScroll);
-
-        // Also pause when hovering cards (optional, but we'll keep)
-        document.addEventListener('mouseover', function(e) {
-            const card = e.target.closest('.portfolio-item');
-            if (card && wrapper.contains(card)) {
-                stopAutoScroll();
-            }
+        // Recalculate on resize
+        window.addEventListener('resize', () => {
+            updateDimensions();
+            // Ensure we're within bounds
+            if (currentTranslate > 0) currentTranslate -= totalWidth;
+            if (currentTranslate <= -totalWidth) currentTranslate += totalWidth;
+            applyTransform(currentTranslate);
         });
-
-        document.addEventListener('mouseout', function(e) {
-            const card = e.target.closest('.portfolio-item');
-            if (card && wrapper.contains(card)) {
-                const related = e.relatedTarget;
-                if (!related || !wrapper.contains(related)) {
-                    startAutoScroll();
-                }
-            }
-        });
-
-        // ---- ARROWS ----
-        const leftBtn = document.getElementById('scrollLeft');
-        const rightBtn = document.getElementById('scrollRight');
-
-        function moveCarousel(direction) {
-            stopAutoScroll();
-            const cardWidth = getCardWidth();
-            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
-            let target = carousel.scrollLeft + direction * cardWidth;
-            if (target < 0) target = 0;
-            if (target > maxScroll) target = 0;
-            carousel.scrollTo({ left: target, behavior: 'smooth' });
-            clearTimeout(carousel._resumeTimer);
-            carousel._resumeTimer = setTimeout(startAutoScroll, 5000);
-        }
-
-        leftBtn.addEventListener('click', () => moveCarousel(-1));
-        rightBtn.addEventListener('click', () => moveCarousel(1));
-
-        // ---- MANUAL SCROLL DETECTION ----
-        carousel.addEventListener('scroll', function() {
-            if (!carousel._programmaticScroll) {
-                stopAutoScroll();
-                clearTimeout(carousel._userScrollTimer);
-                carousel._userScrollTimer = setTimeout(startAutoScroll, 5000);
-            }
-            carousel._programmaticScroll = false;
-        });
-
-        const originalScrollTo = carousel.scrollTo.bind(carousel);
-        carousel.scrollTo = function(options) {
-            carousel._programmaticScroll = true;
-            originalScrollTo(options);
-        };
-
-        startAutoScroll();
 
         // ---- CONTACT FORM → WHATSAPP ----
         document.getElementById('contactForm').addEventListener('submit', function(e) {
@@ -1213,14 +1363,16 @@
             const message = document.getElementById('message').value.trim();
             if (!name || !email || !message) { alert('Please fill in all fields.'); return; }
             if (!email.includes('@') || !email.includes('.')) { alert('Please enter a valid email address.'); return; }
-            const waMessage = `Hello DND Ghana,%0A%0A*Name:* ${encodeURIComponent(name)}%0A*Email:* ${encodeURIComponent(email)}%0A*Message:* ${encodeURIComponent(message)}%0A%0A-- Sent from the DND Ghana website`;
+            const waMessage =
+                `Hello DND Ghana,%0A%0A*Name:* ${encodeURIComponent(name)}%0A*Email:* ${encodeURIComponent(email)}%0A*Message:* ${encodeURIComponent(message)}%0A%0A-- Sent from the DND Ghana website`;
             const waUrl = `https://wa.me/${WHATSAPP_NUMBER}?text=${waMessage}`;
             window.open(waUrl, '_blank');
             this.reset();
         });
 
-        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && links.classList.contains('open')) closeNav(); });
+        // ---- ESC to close mobile nav ----
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && links.classList.contains('open'))
+                closeNav(); });
     </script>
-
 </body>
 </html>
