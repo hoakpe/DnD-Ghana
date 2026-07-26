@@ -393,7 +393,7 @@
             50% { transform: translateX(-50%) translateY(8px); }
         }
 
-        /* ===== PORTFOLIO — 360 SMOOTH CONTINUOUS ===== */
+        /* ===== PORTFOLIO — 360° AUTO-ROTATION (no arrows) ===== */
         .portfolio {
             padding: 100px 0 80px;
             background: #f0f4f9;
@@ -421,8 +421,9 @@
             gap: 30px;
             overflow-x: auto;
             overflow-y: visible;
-            scroll-behavior: auto; /* We control smoothness via JS */
+            scroll-behavior: smooth;
             -webkit-overflow-scrolling: touch;
+            scroll-snap-type: x mandatory;
             padding: 10px 4px 20px 4px;
             scrollbar-width: none;
             -ms-overflow-style: none;
@@ -436,6 +437,7 @@
         .portfolio-item {
             flex: 0 0 320px;
             max-width: 320px;
+            scroll-snap-align: start;
             background: var(--white);
             border-radius: 12px;
             overflow: hidden;
@@ -772,7 +774,7 @@
         </div>
     </section>
 
-    <!-- ===== PORTFOLIO — 360 SMOOTH CONTINUOUS ===== -->
+    <!-- ===== PORTFOLIO — 360° AUTO-ROTATION (no arrows) ===== -->
     <section class="portfolio" id="portfolio">
         <div class="container">
             <div class="portfolio-header">
@@ -786,7 +788,7 @@
 
             <div class="portfolio-carousel-wrapper">
                 <div class="portfolio-carousel" id="portfolioCarousel">
-                    <!-- Items injected by JS (tripled for seamless loop) -->
+                    <!-- Items injected by JS -->
                 </div>
             </div>
         </div>
@@ -999,19 +1001,18 @@
         buildHeroSlides();
 
         // ============================================================
-        //  PORTFOLIO — SMOOTH CONTINUOUS 360° SCROLL
+        //  PORTFOLIO — 360° AUTO-ROTATION (infinite loop, no arrows)
         // ============================================================
         const carousel = document.getElementById('portfolioCarousel');
-        let smoothScrollInterval = null;
-        const SCROLL_STEP = 1.5; // pixels per step for smooth motion
-        const FRAME_DELAY = 20; // ms per step (50fps)
-        let setWidth = 0;
+        let autoScrollInterval = null;
+        const AUTO_SCROLL_DELAY = 2800; // ms between steps (smooth rotation)
 
-        // Build the carousel with 3 copies for seamless looping
+        // Build the carousel items (doubled for seamless loop)
         function buildCarousel() {
-            const tripleData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
             carousel.innerHTML = '';
-            tripleData.forEach(item => {
+            // Double the data for infinite loop
+            const doubledData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
+            doubledData.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'portfolio-item';
 
@@ -1054,14 +1055,12 @@
                 carousel.appendChild(card);
             });
 
-            // Calculate the width of one full set
-            setWidth = carousel.scrollWidth / 3;
-
             // ---- CLICK EVENT (toggle active) ----
             document.querySelectorAll('.portfolio-item').forEach(card => {
                 card.addEventListener('click', function(e) {
+                    // If we were dragging, ignore click
                     if (isDragging) return;
-                    stopSmoothScroll();
+                    // toggle active
                     if (this.classList.contains('active')) {
                         this.classList.remove('active');
                     } else {
@@ -1070,34 +1069,12 @@
                         });
                         this.classList.add('active');
                     }
-                    // Resume after delay
-                    clearTimeout(carousel._clickResumeTimer);
-                    carousel._clickResumeTimer = setTimeout(startSmoothScroll, 5000);
                 });
             });
         }
         buildCarousel();
 
-        // ---- SMOOTH SCROLL ENGINE ----
-        function startSmoothScroll() {
-            if (smoothScrollInterval) return;
-            smoothScrollInterval = setInterval(() => {
-                let next = carousel.scrollLeft + SCROLL_STEP;
-                if (next >= setWidth * 2) {
-                    next = setWidth;
-                }
-                carousel.scrollLeft = next;
-            }, FRAME_DELAY);
-        }
-
-        function stopSmoothScroll() {
-            if (smoothScrollInterval) {
-                clearInterval(smoothScrollInterval);
-                smoothScrollInterval = null;
-            }
-        }
-
-        // ---- MOUSE DRAG ----
+        // ---- MOUSE DRAG (desktop) ----
         let isDragging = false;
         let startX = 0;
         let startScrollLeft = 0;
@@ -1110,7 +1087,6 @@
             startScrollLeft = carousel.scrollLeft;
             dragDistance = 0;
             carousel.style.cursor = 'grabbing';
-            stopSmoothScroll();
             e.preventDefault();
         });
 
@@ -1120,6 +1096,7 @@
             dragDistance = Math.abs(delta);
             if (dragDistance > DRAG_THRESHOLD) {
                 isDragging = true;
+                stopAutoScroll();
                 carousel.scrollLeft = startScrollLeft - delta;
             }
         });
@@ -1128,10 +1105,7 @@
             if (startX !== undefined) {
                 if (isDragging) {
                     clearTimeout(carousel._dragResumeTimer);
-                    carousel._dragResumeTimer = setTimeout(startSmoothScroll, 4000);
-                } else {
-                    // If no drag happened, it was a click – handled by the card click listener
-                    // But we need to resume scroll if click wasn't on a card?
+                    carousel._dragResumeTimer = setTimeout(startAutoScroll, 3000);
                 }
                 startX = undefined;
                 carousel.style.cursor = 'grab';
@@ -1145,22 +1119,56 @@
                 carousel.style.cursor = 'grab';
                 if (isDragging) {
                     clearTimeout(carousel._dragResumeTimer);
-                    carousel._dragResumeTimer = setTimeout(startSmoothScroll, 4000);
+                    carousel._dragResumeTimer = setTimeout(startAutoScroll, 3000);
                 }
                 setTimeout(() => { isDragging = false; }, 100);
             }
         });
 
-        // ---- PAUSE ON HOVER ----
-        const wrapper = document.querySelector('.portfolio-carousel-wrapper');
-        wrapper.addEventListener('mouseenter', stopSmoothScroll);
-        wrapper.addEventListener('mouseleave', startSmoothScroll);
+        // ---- AUTO‑SCROLL (360° rotation) ----
+        function getCardWidth() {
+            const first = carousel.querySelector('.portfolio-item');
+            if (!first) return 350;
+            return first.offsetWidth + 30;
+        }
 
-        // Also pause when hovering cards individually
+        function getMaxScroll() {
+            // Only scroll through the first half (original items), then reset
+            return carousel.scrollWidth / 2;
+        }
+
+        function autoScrollStep() {
+            const cardWidth = getCardWidth();
+            const maxScroll = getMaxScroll();
+            let current = carousel.scrollLeft;
+            let next = current + cardWidth;
+            if (next >= maxScroll) {
+                next = 0; // seamless loop back to start
+            }
+            carousel.scrollTo({ left: next, behavior: 'smooth' });
+        }
+
+        function startAutoScroll() {
+            if (autoScrollInterval) return;
+            autoScrollInterval = setInterval(autoScrollStep, AUTO_SCROLL_DELAY);
+        }
+
+        function stopAutoScroll() {
+            if (autoScrollInterval) {
+                clearInterval(autoScrollInterval);
+                autoScrollInterval = null;
+            }
+        }
+
+        const wrapper = document.querySelector('.portfolio-carousel-wrapper');
+        wrapper.addEventListener('mouseenter', stopAutoScroll);
+        wrapper.addEventListener('mouseleave', startAutoScroll);
+
+        // Also pause when hovering cards
         document.addEventListener('mouseover', function(e) {
             const card = e.target.closest('.portfolio-item');
             if (card && wrapper.contains(card)) {
-                stopSmoothScroll();
+                stopAutoScroll();
             }
         });
 
@@ -1169,19 +1177,33 @@
             if (card && wrapper.contains(card)) {
                 const related = e.relatedTarget;
                 if (!related || !wrapper.contains(related)) {
-                    startSmoothScroll();
+                    startAutoScroll();
                 }
             }
         });
 
-        // ---- RESIZE HANDLER ----
-        window.addEventListener('resize', () => {
-            setWidth = carousel.scrollWidth / 3;
+        // ---- MANUAL SCROLL DETECTION (user scrolls via touch/drag) ----
+        carousel.addEventListener('scroll', function() {
+            const maxScroll = getMaxScroll();
+            // If user scrolls beyond the original set, reset to start
+            if (carousel.scrollLeft >= maxScroll) {
+                carousel.scrollLeft = 0;
+            }
+            if (!carousel._programmaticScroll) {
+                stopAutoScroll();
+                clearTimeout(carousel._userScrollTimer);
+                carousel._userScrollTimer = setTimeout(startAutoScroll, 5000);
+            }
+            carousel._programmaticScroll = false;
         });
 
-        // ---- START THE 360 ROTATION ----
-        // Wait for layout to settle
-        setTimeout(startSmoothScroll, 500);
+        const originalScrollTo = carousel.scrollTo.bind(carousel);
+        carousel.scrollTo = function(options) {
+            carousel._programmaticScroll = true;
+            originalScrollTo(options);
+        };
+
+        startAutoScroll();
 
         // ---- CONTACT FORM → WHATSAPP ----
         document.getElementById('contactForm').addEventListener('submit', function(e) {
@@ -1199,5 +1221,6 @@
 
         document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && links.classList.contains('open')) closeNav(); });
     </script>
+
 </body>
 </html>
