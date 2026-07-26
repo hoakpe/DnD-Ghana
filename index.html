@@ -393,7 +393,7 @@
             50% { transform: translateX(-50%) translateY(8px); }
         }
 
-        /* ===== PORTFOLIO — 360° AUTO-ROTATION (no arrows) ===== */
+        /* ===== PORTFOLIO — CLICK TO EXPAND + DRAG ===== */
         .portfolio {
             padding: 100px 0 80px;
             background: #f0f4f9;
@@ -428,7 +428,7 @@
             scrollbar-width: none;
             -ms-overflow-style: none;
             align-items: flex-start;
-            touch-action: pan-y;
+            touch-action: pan-y; /* keep touch scrolling */
         }
         .portfolio-carousel::-webkit-scrollbar {
             display: none;
@@ -519,6 +519,36 @@
             max-height: 200px;
             opacity: 1;
             margin-top: 10px;
+        }
+
+        /* Arrows */
+        .carousel-arrows {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+            margin-top: 30px;
+        }
+        .carousel-arrows button {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: 1px solid var(--border-light);
+            background: var(--white);
+            color: var(--black);
+            font-size: 1.2rem;
+            cursor: pointer;
+            transition: background 0.3s ease, border-color 0.3s ease, transform 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-family: 'Candara', 'Segoe UI', sans-serif;
+            user-select: none;
+        }
+        .carousel-arrows button:hover {
+            background: var(--light-blue);
+            border-color: var(--light-blue);
+            color: var(--white);
+            transform: scale(1.05);
         }
 
         /* ----- OTHER SECTIONS ----- */
@@ -644,6 +674,11 @@
                 flex: 0 0 70%;
                 max-width: 70%;
             }
+            .carousel-arrows button {
+                width: 54px;
+                height: 54px;
+                font-size: 1.5rem;
+            }
             .nav-logo .logo-text { font-size: 0.55rem; }
             .nav-logo .logo-mark { width: 38px; height: 38px; font-size: 1rem; }
         }
@@ -664,6 +699,11 @@
             .portfolio-item {
                 flex: 0 0 85%;
                 max-width: 85%;
+            }
+            .carousel-arrows button {
+                width: 60px;
+                height: 60px;
+                font-size: 1.8rem;
             }
         }
     </style>
@@ -774,7 +814,7 @@
         </div>
     </section>
 
-    <!-- ===== PORTFOLIO — 360° AUTO-ROTATION (no arrows) ===== -->
+    <!-- ===== PORTFOLIO — CLICK TO EXPAND + DRAG ===== -->
     <section class="portfolio" id="portfolio">
         <div class="container">
             <div class="portfolio-header">
@@ -790,6 +830,11 @@
                 <div class="portfolio-carousel" id="portfolioCarousel">
                     <!-- Items injected by JS -->
                 </div>
+            </div>
+
+            <div class="carousel-arrows">
+                <button id="scrollLeft" aria-label="Scroll left">‹</button>
+                <button id="scrollRight" aria-label="Scroll right">›</button>
             </div>
         </div>
     </section>
@@ -1001,18 +1046,16 @@
         buildHeroSlides();
 
         // ============================================================
-        //  PORTFOLIO — 360° AUTO-ROTATION (infinite loop, no arrows)
+        //  PORTFOLIO — CLICK TO EXPAND + MOUSE DRAG
         // ============================================================
         const carousel = document.getElementById('portfolioCarousel');
         let autoScrollInterval = null;
-        const AUTO_SCROLL_DELAY = 2800; // ms between steps (smooth rotation)
+        const AUTO_SCROLL_DELAY = 3000;
 
-        // Build the carousel items (doubled for seamless loop)
+        // Build the carousel items
         function buildCarousel() {
             carousel.innerHTML = '';
-            // Double the data for infinite loop
-            const doubledData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
-            doubledData.forEach(item => {
+            PORTFOLIO_DATA.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'portfolio-item';
 
@@ -1079,7 +1122,7 @@
         let startX = 0;
         let startScrollLeft = 0;
         let dragDistance = 0;
-        const DRAG_THRESHOLD = 5;
+        const DRAG_THRESHOLD = 5; // pixels to distinguish drag from click
 
         carousel.addEventListener('mousedown', (e) => {
             isDragging = false;
@@ -1087,6 +1130,7 @@
             startScrollLeft = carousel.scrollLeft;
             dragDistance = 0;
             carousel.style.cursor = 'grabbing';
+            // Prevent text selection during drag
             e.preventDefault();
         });
 
@@ -1096,6 +1140,7 @@
             dragDistance = Math.abs(delta);
             if (dragDistance > DRAG_THRESHOLD) {
                 isDragging = true;
+                // Stop auto-scroll while dragging
                 stopAutoScroll();
                 carousel.scrollLeft = startScrollLeft - delta;
             }
@@ -1103,16 +1148,19 @@
 
         document.addEventListener('mouseup', () => {
             if (startX !== undefined) {
+                // If we were dragging, restart auto-scroll after a moment
                 if (isDragging) {
                     clearTimeout(carousel._dragResumeTimer);
                     carousel._dragResumeTimer = setTimeout(startAutoScroll, 3000);
                 }
                 startX = undefined;
                 carousel.style.cursor = 'grab';
+                // Reset drag flag after a small delay to prevent click
                 setTimeout(() => { isDragging = false; }, 100);
             }
         });
 
+        // Also cancel if mouse leaves the carousel
         carousel.addEventListener('mouseleave', () => {
             if (startX !== undefined) {
                 startX = undefined;
@@ -1125,25 +1173,20 @@
             }
         });
 
-        // ---- AUTO‑SCROLL (360° rotation) ----
+        // ---- AUTO‑SCROLL ----
         function getCardWidth() {
             const first = carousel.querySelector('.portfolio-item');
             if (!first) return 350;
             return first.offsetWidth + 30;
         }
 
-        function getMaxScroll() {
-            // Only scroll through the first half (original items), then reset
-            return carousel.scrollWidth / 2;
-        }
-
         function autoScrollStep() {
             const cardWidth = getCardWidth();
-            const maxScroll = getMaxScroll();
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
             let current = carousel.scrollLeft;
             let next = current + cardWidth;
             if (next >= maxScroll) {
-                next = 0; // seamless loop back to start
+                next = 0;
             }
             carousel.scrollTo({ left: next, behavior: 'smooth' });
         }
@@ -1164,7 +1207,7 @@
         wrapper.addEventListener('mouseenter', stopAutoScroll);
         wrapper.addEventListener('mouseleave', startAutoScroll);
 
-        // Also pause when hovering cards
+        // Also pause when hovering cards (optional, but we'll keep)
         document.addEventListener('mouseover', function(e) {
             const card = e.target.closest('.portfolio-item');
             if (card && wrapper.contains(card)) {
@@ -1182,13 +1225,27 @@
             }
         });
 
-        // ---- MANUAL SCROLL DETECTION (user scrolls via touch/drag) ----
+        // ---- ARROWS ----
+        const leftBtn = document.getElementById('scrollLeft');
+        const rightBtn = document.getElementById('scrollRight');
+
+        function moveCarousel(direction) {
+            stopAutoScroll();
+            const cardWidth = getCardWidth();
+            const maxScroll = carousel.scrollWidth - carousel.clientWidth;
+            let target = carousel.scrollLeft + direction * cardWidth;
+            if (target < 0) target = 0;
+            if (target > maxScroll) target = 0;
+            carousel.scrollTo({ left: target, behavior: 'smooth' });
+            clearTimeout(carousel._resumeTimer);
+            carousel._resumeTimer = setTimeout(startAutoScroll, 5000);
+        }
+
+        leftBtn.addEventListener('click', () => moveCarousel(-1));
+        rightBtn.addEventListener('click', () => moveCarousel(1));
+
+        // ---- MANUAL SCROLL DETECTION ----
         carousel.addEventListener('scroll', function() {
-            const maxScroll = getMaxScroll();
-            // If user scrolls beyond the original set, reset to start
-            if (carousel.scrollLeft >= maxScroll) {
-                carousel.scrollLeft = 0;
-            }
             if (!carousel._programmaticScroll) {
                 stopAutoScroll();
                 clearTimeout(carousel._userScrollTimer);
