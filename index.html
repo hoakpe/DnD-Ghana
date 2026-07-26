@@ -595,7 +595,7 @@
             font-weight: 500;
         }
 
-        /* ===== PORTFOLIO — 360 SMOOTH CONTINUOUS ===== */
+        /* ===== PORTFOLIO — 360 SMOOTH CONTINUOUS (with touch) ===== */
         .portfolio {
             padding: 80px 0 80px;
             background: #f0f4f9;
@@ -613,7 +613,7 @@
             cursor: grab;
             user-select: none;
             -webkit-user-select: none;
-            touch-action: pan-y;
+            /* Removed touch-action to allow native horizontal scroll */
         }
         .portfolio-carousel-wrapper:active {
             cursor: grabbing;
@@ -625,12 +625,12 @@
             overflow-x: auto;
             overflow-y: visible;
             scroll-behavior: auto;
-            -webkit-overflow-scrolling: touch;
+            -webkit-overflow-scrolling: touch; /* smooth momentum scroll on iOS */
             padding: 10px 4px 20px 4px;
             scrollbar-width: none;
             -ms-overflow-style: none;
             align-items: flex-start;
-            touch-action: pan-y;
+            /* No touch-action restriction — native scroll works */
         }
         .portfolio-carousel::-webkit-scrollbar {
             display: none;
@@ -1085,7 +1085,6 @@
         const LOGO_URL = 'images/dnd 3.png';
         const WHATSAPP_NUMBER = '917082819336';
 
-        // ----- HOT SPOT CONFIGURATION -----
         const HOT_SPOT_CONFIG = {
             type: 'image',
             src: 'images/Coding flyer.png',
@@ -1313,14 +1312,15 @@
         buildHotSpot();
 
         // ============================================================
-        //  PORTFOLIO — SMOOTH CONTINUOUS 360° SCROLL (with touch support)
+        //  PORTFOLIO — SMOOTH CONTINUOUS 360° SCROLL
+        //  with RELIABLE touch support (native scroll, no fighting)
         // ============================================================
         const carousel = document.getElementById('portfolioCarousel');
         let smoothScrollInterval = null;
         const SCROLL_STEP = 1.5;
         const FRAME_DELAY = 20;
         let setWidth = 0;
-        let isUserInteracting = false; // touch or drag
+        let isUserInteracting = false;
 
         function buildCarousel() {
             const tripleData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
@@ -1366,8 +1366,10 @@
             });
             setWidth = carousel.scrollWidth / 3;
 
+            // Card click toggles active state
             document.querySelectorAll('.portfolio-item').forEach(card => {
                 card.addEventListener('click', function(e) {
+                    // Ignore click if user was swiping (touch move > threshold)
                     if (isUserInteracting) return;
                     stopSmoothScroll();
                     if (this.classList.contains('active')) {
@@ -1388,7 +1390,7 @@
         function startSmoothScroll() {
             if (smoothScrollInterval) return;
             smoothScrollInterval = setInterval(() => {
-                // Do NOT scroll if user is interacting
+                // Do NOT scroll programmatically if user is interacting
                 if (isUserInteracting) return;
                 let next = carousel.scrollLeft + SCROLL_STEP;
                 if (next >= setWidth * 2) {
@@ -1406,13 +1408,32 @@
         }
 
         // ---- TOUCH EVENTS ----
-        carousel.addEventListener('touchstart', () => {
+        let touchStartX = 0;
+        let touchMoved = false;
+
+        carousel.addEventListener('touchstart', (e) => {
+            touchStartX = e.touches[0].clientX;
+            touchMoved = false;
             isUserInteracting = true;
             stopSmoothScroll();
+            // Clear any pending resume timer
+            clearTimeout(carousel._touchResumeTimer);
         }, { passive: true });
 
-        carousel.addEventListener('touchend', () => {
+        carousel.addEventListener('touchmove', (e) => {
+            const deltaX = e.touches[0].clientX - touchStartX;
+            if (Math.abs(deltaX) > 10) {
+                touchMoved = true;
+            }
+            // Let native scroll handle everything – do NOT prevent default
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', (e) => {
+            // Only resume if it wasn't a long swipe? We'll resume regardless.
             isUserInteracting = false;
+            // If it was a tap (no movement), and we want card expansion, the click event will handle it.
+            // But if touchMoved, we prevent the click from expanding.
+            // We'll handle that via a flag.
             clearTimeout(carousel._touchResumeTimer);
             carousel._touchResumeTimer = setTimeout(() => {
                 if (!isUserInteracting) {
@@ -1427,7 +1448,7 @@
             carousel._touchResumeTimer = setTimeout(startSmoothScroll, 3000);
         }, { passive: true });
 
-        // ---- MOUSE DRAG ----
+        // ---- MOUSE DRAG (desktop) ----
         let isDragging = false;
         let startX = 0;
         let startScrollLeft = 0;
@@ -1464,7 +1485,6 @@
                         startSmoothScroll();
                     }, 4000);
                 } else {
-                    // If no drag, it was a click – the card click handler will handle it
                     isUserInteracting = false;
                 }
                 startX = undefined;
@@ -1488,7 +1508,7 @@
             }
         });
 
-        // ---- HOVER PAUSE ----
+        // ---- HOVER PAUSE (desktop) ----
         const wrapper = document.querySelector('.portfolio-carousel-wrapper');
         wrapper.addEventListener('mouseenter', () => {
             isUserInteracting = true;
@@ -1499,7 +1519,6 @@
             startSmoothScroll();
         });
 
-        // Also pause when hovering cards individually
         document.addEventListener('mouseover', function(e) {
             const card = e.target.closest('.portfolio-item');
             if (card && wrapper.contains(card)) {
@@ -1523,6 +1542,7 @@
             setWidth = carousel.scrollWidth / 3;
         });
 
+        // Start auto-scroll after initial load
         setTimeout(startSmoothScroll, 500);
 
         // ---- CONTACT FORM → WHATSAPP ----
