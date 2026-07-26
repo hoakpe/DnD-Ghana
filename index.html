@@ -40,6 +40,8 @@
             --gray: #f5f7fa;
             --text-light: #4a4a4a;
             --border-light: #e6edf4;
+            --hot-red: #ff3b30;
+            --hot-orange: #ff9500;
         }
 
         /* ----- BUTTONS ----- */
@@ -393,9 +395,209 @@
             50% { transform: translateX(-50%) translateY(8px); }
         }
 
-        /* ===== PORTFOLIO — 360° AUTO-ROTATION (no arrows) ===== */
+        /* ===== ABOUT + HOT SPOT ===== */
+        .about {
+            padding: 100px 0 60px;
+            background: var(--white);
+        }
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 60px;
+            align-items: center;
+        }
+        .about-text h2 {
+            font-size: 2.6rem;
+            font-weight: 700;
+            letter-spacing: -0.02em;
+            margin-bottom: 16px;
+            color: var(--black);
+        }
+        .about-text h2 span {
+            color: var(--light-blue);
+        }
+        .about-text p {
+            color: var(--text-light);
+            font-size: 1.05rem;
+            line-height: 1.8;
+            margin-bottom: 20px;
+        }
+        .about-text .mission {
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--black);
+            padding: 20px 28px;
+            background: var(--light-blue-fade);
+            border-left: 4px solid var(--light-blue);
+            border-radius: 2px;
+            margin-top: 8px;
+        }
+
+        /* ---- HOT SPOT (enlarged) ---- */
+        .hot-spot {
+            position: relative;
+            border-radius: 16px;
+            overflow: hidden;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+            background: #0b1a26;
+            aspect-ratio: 16 / 9;
+            cursor: pointer;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+            min-height: 260px;
+        }
+        .hot-spot:hover {
+            transform: scale(1.02);
+            box-shadow: 0 30px 80px rgba(0,0,0,0.18);
+        }
+        .hot-spot img,
+        .hot-spot video {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: block;
+        }
+        .hot-spot .hot-badge {
+            position: absolute;
+            top: 16px;
+            left: 16px;
+            background: linear-gradient(135deg, #ff3b30, #ff9500);
+            color: #fff;
+            padding: 6px 18px;
+            border-radius: 30px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
+            box-shadow: 0 4px 15px rgba(255,59,48,0.4);
+            z-index: 2;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            animation: pulseBadge 2s ease-in-out infinite;
+        }
+        @keyframes pulseBadge {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+        }
+        .hot-spot .hot-badge::before {
+            content: '🔥';
+            font-size: 0.9rem;
+        }
+        .hot-spot .play-overlay {
+            position: absolute;
+            inset: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.2);
+            opacity: 0;
+            transition: opacity 0.4s ease;
+            z-index: 1;
+            pointer-events: none;
+        }
+        .hot-spot .play-overlay.visible {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .hot-spot:hover .play-overlay {
+            opacity: 1;
+            pointer-events: auto;
+        }
+        .hot-spot .play-btn {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            background: rgba(255,255,255,0.9);
+            border: none;
+            cursor: pointer;
+            font-size: 2rem;
+            color: var(--black);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.3s ease, background 0.3s ease;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.3);
+            pointer-events: auto;
+        }
+        .hot-spot .play-btn:hover {
+            transform: scale(1.1);
+            background: #fff;
+        }
+        .hot-spot .hot-title {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px 24px;
+            background: linear-gradient(to top, rgba(0,0,0,0.7), transparent);
+            color: #fff;
+            z-index: 2;
+            pointer-events: none;
+        }
+        .hot-spot .hot-title h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        .hot-spot .hot-title p {
+            font-size: 0.9rem;
+            opacity: 0.8;
+            font-weight: 400;
+        }
+        .hot-spot.is-image .play-overlay {
+            opacity: 1;
+            pointer-events: none;
+            background: rgba(0,0,0,0.05);
+        }
+        .hot-spot.is-image .play-overlay .play-btn {
+            display: none;
+        }
+        .hot-spot.is-image .play-overlay::after {
+            content: '📸';
+            font-size: 3rem;
+            opacity: 0.3;
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+        }
+
+        /* ---- STATS ---- */
+        .stats-bar {
+            margin-top: 40px;
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            padding-top: 40px;
+            border-top: 1px solid var(--border-light);
+        }
+        .stat-item {
+            background: var(--gray);
+            padding: 24px 20px;
+            border-radius: 8px;
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        .stat-item:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.04);
+        }
+        .stat-item .number {
+            font-size: 2.4rem;
+            font-weight: 700;
+            color: var(--light-blue);
+            line-height: 1;
+            margin-bottom: 4px;
+        }
+        .stat-item .label {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            font-weight: 500;
+        }
+
+        /* ===== PORTFOLIO — 360 SMOOTH CONTINUOUS ===== */
         .portfolio {
-            padding: 100px 0 80px;
+            padding: 80px 0 80px;
             background: #f0f4f9;
             overflow: hidden;
         }
@@ -411,6 +613,7 @@
             cursor: grab;
             user-select: none;
             -webkit-user-select: none;
+            touch-action: pan-y;
         }
         .portfolio-carousel-wrapper:active {
             cursor: grabbing;
@@ -421,9 +624,8 @@
             gap: 30px;
             overflow-x: auto;
             overflow-y: visible;
-            scroll-behavior: smooth;
+            scroll-behavior: auto;
             -webkit-overflow-scrolling: touch;
-            scroll-snap-type: x mandatory;
             padding: 10px 4px 20px 4px;
             scrollbar-width: none;
             -ms-overflow-style: none;
@@ -437,7 +639,6 @@
         .portfolio-item {
             flex: 0 0 320px;
             max-width: 320px;
-            scroll-snap-align: start;
             background: var(--white);
             border-radius: 12px;
             overflow: hidden;
@@ -522,19 +723,7 @@
         }
 
         /* ----- OTHER SECTIONS ----- */
-        .about { padding: 100px 0 80px; background: var(--white); }
-        .about-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: center; }
-        .about-text h2 { font-size: 2.6rem; font-weight: 700; letter-spacing: -0.02em; margin-bottom: 16px; color: var(--black); }
-        .about-text h2 span { color: var(--light-blue); }
-        .about-text p { color: var(--text-light); font-size: 1.05rem; line-height: 1.8; margin-bottom: 20px; }
-        .about-text .mission { font-size: 1.1rem; font-weight: 600; color: var(--black); padding: 20px 28px; background: var(--light-blue-fade); border-left: 4px solid var(--light-blue); border-radius: 2px; margin-top: 8px; }
-        .about-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; }
-        .stat-item { background: var(--gray); padding: 32px 24px; border-radius: 6px; text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease; }
-        .stat-item:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.04); }
-        .stat-item .number { font-size: 2.8rem; font-weight: 700; color: var(--light-blue); line-height: 1; margin-bottom: 6px; }
-        .stat-item .label { font-size: 0.95rem; color: var(--text-light); font-weight: 500; }
-
-        .services { padding: 100px 0 80px; background: var(--gray); }
+        .services { padding: 80px 0 80px; background: var(--gray); }
         .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
         .service-card { background: var(--white); padding: 36px 30px 32px; border-radius: 6px; border: 1px solid var(--border-light); transition: transform 0.3s ease, box-shadow 0.3s ease, border-color 0.3s ease; }
         .service-card:hover { transform: translateY(-6px); box-shadow: 0 16px 48px rgba(0,0,0,0.05); border-color: var(--light-blue); }
@@ -542,7 +731,7 @@
         .service-card .service-title .num { color: var(--light-blue); font-weight: 400; margin-right: 4px; }
         .service-card p { color: var(--text-light); font-size: 0.95rem; line-height: 1.7; }
 
-        .training { padding: 100px 0 80px; background: var(--white); }
+        .training { padding: 80px 0 80px; background: var(--white); }
         .training-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; }
         .training-card { background: var(--gray); padding: 32px 30px; border-radius: 6px; border-left: 4px solid var(--light-blue); transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .training-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.04); }
@@ -552,7 +741,7 @@
         .training-cta { margin-top: 48px; text-align: center; }
         .training-cta p { font-size: 1.05rem; color: var(--text-light); max-width: 640px; margin: 0 auto 20px; line-height: 1.7; }
 
-        .team { padding: 100px 0 80px; background: var(--gray); }
+        .team { padding: 80px 0 80px; background: var(--gray); }
         .team-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 30px; }
         .team-card { background: var(--white); padding: 32px 28px; border-radius: 6px; border: 1px solid var(--border-light); text-align: center; transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .team-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.04); }
@@ -561,14 +750,14 @@
         .team-card .role { font-size: 0.9rem; color: var(--light-blue); font-weight: 600; margin-bottom: 4px; }
         .team-card .org { font-size: 0.85rem; color: var(--text-light); }
 
-        .projects { padding: 100px 0 80px; background: var(--white); }
+        .projects { padding: 80px 0 80px; background: var(--white); }
         .projects-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 30px; }
         .project-card { background: var(--gray); padding: 32px 30px; border-radius: 6px; border: 1px solid var(--border-light); transition: transform 0.3s ease, box-shadow 0.3s ease; }
         .project-card:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.04); }
         .project-card h4 { font-size: 1.15rem; font-weight: 700; color: var(--black); margin-bottom: 6px; }
         .project-card p { color: var(--text-light); font-size: 0.95rem; line-height: 1.7; }
 
-        .contact { padding: 100px 0 80px; background: var(--gray); }
+        .contact { padding: 80px 0 80px; background: var(--gray); }
         .contact-wrapper { display: grid; grid-template-columns: 1fr 1fr; gap: 60px; align-items: start; }
         .contact-info h3 { font-size: 1.8rem; font-weight: 700; color: var(--black); margin-bottom: 16px; }
         .contact-info p { color: var(--text-light); font-size: 1.05rem; line-height: 1.8; margin-bottom: 30px; }
@@ -599,7 +788,7 @@
             .services-grid { grid-template-columns: repeat(2, 1fr); }
             .team-grid { grid-template-columns: repeat(2, 1fr); }
             .about-grid { grid-template-columns: 1fr; gap: 40px; }
-            .about-stats { grid-template-columns: 1fr 1fr; }
+            .stats-bar { grid-template-columns: repeat(2, 1fr); }
             .portfolio-item { flex: 0 0 280px; max-width: 280px; }
         }
         @media (max-width: 768px) {
@@ -633,8 +822,9 @@
             .contact-wrapper { grid-template-columns: 1fr; gap: 40px; }
             .section-title { font-size: 2rem; }
             .about-text h2 { font-size: 2rem; }
-            .about-stats { grid-template-columns: 1fr 1fr; gap: 16px; }
-            .stat-item .number { font-size: 2.2rem; }
+            .stats-bar { grid-template-columns: 1fr 1fr; gap: 12px; }
+            .stat-item { padding: 16px; }
+            .stat-item .number { font-size: 1.8rem; }
             .contact-form { padding: 30px 20px; }
             .footer .container { flex-direction: column; text-align: center; }
             .footer-social { justify-content: center; }
@@ -646,6 +836,11 @@
             }
             .nav-logo .logo-text { font-size: 0.55rem; }
             .nav-logo .logo-mark { width: 38px; height: 38px; font-size: 1rem; }
+
+            .hot-spot .hot-title h3 { font-size: 1rem; }
+            .hot-spot .hot-title p { font-size: 0.8rem; }
+            .hot-spot .play-btn { width: 55px; height: 55px; font-size: 1.5rem; }
+            .hot-spot { min-height: 200px; }
         }
         @media (max-width: 480px) {
             .hero-content h1 { font-size: 2.1rem; }
@@ -654,8 +849,9 @@
             .about-text h2 { font-size: 1.7rem; }
             .nav-logo .logo-text { font-size: 0.5rem; }
             .nav-logo .logo-mark { width: 32px; height: 32px; font-size: 0.9rem; }
-            .stat-item { padding: 20px 16px; }
-            .stat-item .number { font-size: 1.8rem; }
+            .stat-item { padding: 14px 12px; }
+            .stat-item .number { font-size: 1.5rem; }
+            .stat-item .label { font-size: 0.75rem; }
             .service-card { padding: 28px 20px; }
             .training-card { padding: 24px 20px; }
             .team-card { padding: 24px 20px; }
@@ -665,6 +861,9 @@
                 flex: 0 0 85%;
                 max-width: 85%;
             }
+            .hot-spot .play-btn { width: 48px; height: 48px; font-size: 1.2rem; }
+            .hot-spot .hot-badge { font-size: 0.6rem; padding: 4px 12px; }
+            .hot-spot { min-height: 160px; }
         }
     </style>
 </head>
@@ -723,7 +922,7 @@
         </div>
     </section>
 
-    <!-- ===== ABOUT ===== -->
+    <!-- ===== ABOUT + HOT SPOT ===== -->
     <section class="about" id="about">
         <div class="container">
             <div class="about-grid">
@@ -743,12 +942,19 @@
                         &ldquo;We don't just deliver services, we create results.&rdquo;
                     </div>
                 </div>
-                <div class="about-stats">
-                    <div class="stat-item"><div class="number">6+</div><div class="label">Years of Experience</div></div>
-                    <div class="stat-item"><div class="number">5</div><div class="label">Core Specialists</div></div>
-                    <div class="stat-item"><div class="number">100+</div><div class="label">Projects Delivered</div></div>
-                    <div class="stat-item"><div class="number">9</div><div class="label">Service Verticals</div></div>
+
+                <!-- 🔥 HOT SPOT — dynamically built by JS -->
+                <div class="hot-spot" id="hotSpot">
+                    <!-- Everything injected by JavaScript -->
                 </div>
+            </div>
+
+            <!-- Stats bar below -->
+            <div class="stats-bar">
+                <div class="stat-item"><div class="number">6+</div><div class="label">Years of Experience</div></div>
+                <div class="stat-item"><div class="number">5</div><div class="label">Core Specialists</div></div>
+                <div class="stat-item"><div class="number">100+</div><div class="label">Projects Delivered</div></div>
+                <div class="stat-item"><div class="number">9</div><div class="label">Service Verticals</div></div>
             </div>
         </div>
     </section>
@@ -774,7 +980,7 @@
         </div>
     </section>
 
-    <!-- ===== PORTFOLIO — 360° AUTO-ROTATION (no arrows) ===== -->
+    <!-- ===== PORTFOLIO — 360 SMOOTH CONTINUOUS ===== -->
     <section class="portfolio" id="portfolio">
         <div class="container">
             <div class="portfolio-header">
@@ -785,7 +991,6 @@
                     </p>
                 </div>
             </div>
-
             <div class="portfolio-carousel-wrapper">
                 <div class="portfolio-carousel" id="portfolioCarousel">
                     <!-- Items injected by JS -->
@@ -880,6 +1085,15 @@
         const LOGO_URL = 'images/dnd 3.png';
         const WHATSAPP_NUMBER = '917082819336';
 
+        // ----- HOT SPOT CONFIGURATION -----
+        const HOT_SPOT_CONFIG = {
+            type: 'image',
+            src: 'images/Coding flyer.png',
+            badge: '🔥 Hot Update',
+            title: 'New Campaign Launch',
+            description: 'Watch our latest creative project in action'
+        };
+
         const HERO_MEDIA = [
             { type: 'video', src: 'Videos/boy typing.mp4' },
             { type: 'video', src: 'Videos/danady ad design.mp4' },
@@ -887,10 +1101,10 @@
         ];
 
         const PORTFOLIO_DATA = [{
-            title: 'Brand Campaign – Tech Startup',
-            category: 'Advertising',
-            description: 'Full brand overhaul including logo, website, and social media campaign that increased engagement by 45%.',
-            media: 'https://picsum.photos/seed/campaign1/600/400'
+             title: 'Professional Printing Services',
+    category: 'Printing Solutions',
+    description: 'High‑quality printing for flyers, brochures, business cards, posters, and billboards — delivered with precision and fast turnaround.',
+    media: 'https://picsum.photos/seed/print/600/400'
         }, {
             title: 'E-commerce Platform – Retail Chain',
             category: 'Web Development',
@@ -909,18 +1123,18 @@
         }, {
             title: 'Billboard & Outdoor Campaign',
             category: 'Traditional Media',
-            description: 'Designed and placed high-impact billboards across Accra and Kumasi for a leading beverage brand.',
-            media: 'https://picsum.photos/seed/billboard5/600/400'
+            description: 'Designed and placed high-impact billboards across Ghana for a all types of  brands.',
+            media: 'Videos/Banner Ad.mp4'
         }, {
-            title: 'Product Photography – Luxury Goods',
-            category: 'Content Creation',
-            description: 'High-end product photography and motion graphics for a premium watch brand’s e-commerce store.',
-            media: 'https://picsum.photos/seed/luxury6/600/400'
+            title: 'Studio Tour – Behind the Scenes',
+    category: 'Videography',
+    description: 'Take a virtual tour of our creative studio — see how we bring ideas to life, from concept to final production.',
+    media: 'Videos/Photography Studio.mp4'
         }, {
             title: 'Digital Ad Campaign – FinTech',
             category: 'Advertising',
             description: 'Multi-channel digital ad campaign that generated 3x ROI and 10,000+ new user sign-ups.',
-            media: 'https://picsum.photos/seed/fintech7/600/400'
+            media: 'videos/discount ad.mp4'
         }, {
             title: 'Drone Aerial – Real Estate Showcase',
             category: 'Videography',
@@ -1001,21 +1215,119 @@
         buildHeroSlides();
 
         // ============================================================
-        //  PORTFOLIO — 360° AUTO-ROTATION (infinite loop, no arrows)
+        //  HOT SPOT — Supports both Image and Video
+        // ============================================================
+        const hotSpot = document.getElementById('hotSpot');
+
+        function buildHotSpot() {
+            const isVideo = HOT_SPOT_CONFIG.type === 'video';
+            hotSpot.className = 'hot-spot' + (isVideo ? '' : ' is-image');
+
+            let mediaEl;
+            if (isVideo) {
+                mediaEl = document.createElement('video');
+                mediaEl.id = 'hotVideo';
+                mediaEl.muted = true;
+                mediaEl.loop = false;
+                mediaEl.playsInline = true;
+                const source = document.createElement('source');
+                source.src = HOT_SPOT_CONFIG.src;
+                source.type = 'video/mp4';
+                mediaEl.appendChild(source);
+                mediaEl.setAttribute('preload', 'metadata');
+            } else {
+                mediaEl = document.createElement('img');
+                mediaEl.src = HOT_SPOT_CONFIG.src;
+                mediaEl.alt = 'Hot Update';
+                mediaEl.loading = 'lazy';
+            }
+
+            const badge = document.createElement('div');
+            badge.className = 'hot-badge';
+            badge.textContent = HOT_SPOT_CONFIG.badge.replace('🔥', '').trim();
+
+            const overlay = document.createElement('div');
+            overlay.className = 'play-overlay' + (isVideo ? '' : ' visible');
+            overlay.id = 'playOverlay';
+
+            if (isVideo) {
+                const playBtn = document.createElement('button');
+                playBtn.className = 'play-btn';
+                playBtn.id = 'playBtn';
+                playBtn.textContent = '▶';
+                overlay.appendChild(playBtn);
+            }
+
+            const title = document.createElement('div');
+            title.className = 'hot-title';
+            title.innerHTML = `
+                    <h3>${HOT_SPOT_CONFIG.title}</h3>
+                    <p>${HOT_SPOT_CONFIG.description}</p>
+                `;
+
+            hotSpot.appendChild(mediaEl);
+            hotSpot.appendChild(badge);
+            hotSpot.appendChild(overlay);
+            hotSpot.appendChild(title);
+
+            if (isVideo) {
+                const video = document.getElementById('hotVideo');
+                const playBtn = document.getElementById('playBtn');
+                const overlayEl = document.getElementById('playOverlay');
+                let isPlaying = false;
+
+                function toggleVideo(e) {
+                    if (e) e.stopPropagation();
+                    if (isPlaying) {
+                        video.pause();
+                        playBtn.textContent = '▶';
+                        isPlaying = false;
+                        overlayEl.classList.add('visible');
+                    } else {
+                        video.play();
+                        playBtn.textContent = '⏸';
+                        isPlaying = true;
+                        setTimeout(() => {
+                            if (isPlaying) overlayEl.classList.remove('visible');
+                        }, 2000);
+                    }
+                }
+
+                playBtn.addEventListener('click', toggleVideo);
+                video.addEventListener('click', toggleVideo);
+                video.addEventListener('ended', () => {
+                    isPlaying = false;
+                    playBtn.textContent = '▶';
+                    overlayEl.classList.add('visible');
+                });
+
+                video.addEventListener('mouseenter', () => {
+                    if (isPlaying) overlayEl.classList.add('visible');
+                });
+                video.addEventListener('mouseleave', () => {
+                    if (isPlaying) overlayEl.classList.remove('visible');
+                });
+            }
+        }
+
+        buildHotSpot();
+
+        // ============================================================
+        //  PORTFOLIO — SMOOTH CONTINUOUS 360° SCROLL (with touch support)
         // ============================================================
         const carousel = document.getElementById('portfolioCarousel');
-        let autoScrollInterval = null;
-        const AUTO_SCROLL_DELAY = 2800; // ms between steps (smooth rotation)
+        let smoothScrollInterval = null;
+        const SCROLL_STEP = 1.5;
+        const FRAME_DELAY = 20;
+        let setWidth = 0;
+        let isUserInteracting = false; // touch or drag
 
-        // Build the carousel items (doubled for seamless loop)
         function buildCarousel() {
+            const tripleData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
             carousel.innerHTML = '';
-            // Double the data for infinite loop
-            const doubledData = [...PORTFOLIO_DATA, ...PORTFOLIO_DATA];
-            doubledData.forEach(item => {
+            tripleData.forEach(item => {
                 const card = document.createElement('div');
                 card.className = 'portfolio-item';
-
                 const mediaWrap = document.createElement('div');
                 mediaWrap.className = 'media-wrap';
                 if (item.media) {
@@ -1041,7 +1353,6 @@
                     placeholder.textContent = 'No media';
                     mediaWrap.appendChild(placeholder);
                 }
-
                 const body = document.createElement('div');
                 body.className = 'item-body';
                 body.innerHTML = `
@@ -1049,18 +1360,16 @@
                         <div class="item-meta">${item.category}</div>
                         <div class="description">${item.description}</div>
                     `;
-
                 card.appendChild(mediaWrap);
                 card.appendChild(body);
                 carousel.appendChild(card);
             });
+            setWidth = carousel.scrollWidth / 3;
 
-            // ---- CLICK EVENT (toggle active) ----
             document.querySelectorAll('.portfolio-item').forEach(card => {
                 card.addEventListener('click', function(e) {
-                    // If we were dragging, ignore click
-                    if (isDragging) return;
-                    // toggle active
+                    if (isUserInteracting) return;
+                    stopSmoothScroll();
                     if (this.classList.contains('active')) {
                         this.classList.remove('active');
                     } else {
@@ -1069,12 +1378,56 @@
                         });
                         this.classList.add('active');
                     }
+                    clearTimeout(carousel._clickResumeTimer);
+                    carousel._clickResumeTimer = setTimeout(startSmoothScroll, 5000);
                 });
             });
         }
         buildCarousel();
 
-        // ---- MOUSE DRAG (desktop) ----
+        function startSmoothScroll() {
+            if (smoothScrollInterval) return;
+            smoothScrollInterval = setInterval(() => {
+                // Do NOT scroll if user is interacting
+                if (isUserInteracting) return;
+                let next = carousel.scrollLeft + SCROLL_STEP;
+                if (next >= setWidth * 2) {
+                    next = setWidth;
+                }
+                carousel.scrollLeft = next;
+            }, FRAME_DELAY);
+        }
+
+        function stopSmoothScroll() {
+            if (smoothScrollInterval) {
+                clearInterval(smoothScrollInterval);
+                smoothScrollInterval = null;
+            }
+        }
+
+        // ---- TOUCH EVENTS ----
+        carousel.addEventListener('touchstart', () => {
+            isUserInteracting = true;
+            stopSmoothScroll();
+        }, { passive: true });
+
+        carousel.addEventListener('touchend', () => {
+            isUserInteracting = false;
+            clearTimeout(carousel._touchResumeTimer);
+            carousel._touchResumeTimer = setTimeout(() => {
+                if (!isUserInteracting) {
+                    startSmoothScroll();
+                }
+            }, 3000);
+        }, { passive: true });
+
+        carousel.addEventListener('touchcancel', () => {
+            isUserInteracting = false;
+            clearTimeout(carousel._touchResumeTimer);
+            carousel._touchResumeTimer = setTimeout(startSmoothScroll, 3000);
+        }, { passive: true });
+
+        // ---- MOUSE DRAG ----
         let isDragging = false;
         let startX = 0;
         let startScrollLeft = 0;
@@ -1087,6 +1440,8 @@
             startScrollLeft = carousel.scrollLeft;
             dragDistance = 0;
             carousel.style.cursor = 'grabbing';
+            isUserInteracting = true;
+            stopSmoothScroll();
             e.preventDefault();
         });
 
@@ -1096,7 +1451,6 @@
             dragDistance = Math.abs(delta);
             if (dragDistance > DRAG_THRESHOLD) {
                 isDragging = true;
-                stopAutoScroll();
                 carousel.scrollLeft = startScrollLeft - delta;
             }
         });
@@ -1105,7 +1459,13 @@
             if (startX !== undefined) {
                 if (isDragging) {
                     clearTimeout(carousel._dragResumeTimer);
-                    carousel._dragResumeTimer = setTimeout(startAutoScroll, 3000);
+                    carousel._dragResumeTimer = setTimeout(() => {
+                        isUserInteracting = false;
+                        startSmoothScroll();
+                    }, 4000);
+                } else {
+                    // If no drag, it was a click – the card click handler will handle it
+                    isUserInteracting = false;
                 }
                 startX = undefined;
                 carousel.style.cursor = 'grab';
@@ -1119,56 +1479,32 @@
                 carousel.style.cursor = 'grab';
                 if (isDragging) {
                     clearTimeout(carousel._dragResumeTimer);
-                    carousel._dragResumeTimer = setTimeout(startAutoScroll, 3000);
+                    carousel._dragResumeTimer = setTimeout(() => {
+                        isUserInteracting = false;
+                        startSmoothScroll();
+                    }, 4000);
                 }
                 setTimeout(() => { isDragging = false; }, 100);
             }
         });
 
-        // ---- AUTO‑SCROLL (360° rotation) ----
-        function getCardWidth() {
-            const first = carousel.querySelector('.portfolio-item');
-            if (!first) return 350;
-            return first.offsetWidth + 30;
-        }
-
-        function getMaxScroll() {
-            // Only scroll through the first half (original items), then reset
-            return carousel.scrollWidth / 2;
-        }
-
-        function autoScrollStep() {
-            const cardWidth = getCardWidth();
-            const maxScroll = getMaxScroll();
-            let current = carousel.scrollLeft;
-            let next = current + cardWidth;
-            if (next >= maxScroll) {
-                next = 0; // seamless loop back to start
-            }
-            carousel.scrollTo({ left: next, behavior: 'smooth' });
-        }
-
-        function startAutoScroll() {
-            if (autoScrollInterval) return;
-            autoScrollInterval = setInterval(autoScrollStep, AUTO_SCROLL_DELAY);
-        }
-
-        function stopAutoScroll() {
-            if (autoScrollInterval) {
-                clearInterval(autoScrollInterval);
-                autoScrollInterval = null;
-            }
-        }
-
+        // ---- HOVER PAUSE ----
         const wrapper = document.querySelector('.portfolio-carousel-wrapper');
-        wrapper.addEventListener('mouseenter', stopAutoScroll);
-        wrapper.addEventListener('mouseleave', startAutoScroll);
+        wrapper.addEventListener('mouseenter', () => {
+            isUserInteracting = true;
+            stopSmoothScroll();
+        });
+        wrapper.addEventListener('mouseleave', () => {
+            isUserInteracting = false;
+            startSmoothScroll();
+        });
 
-        // Also pause when hovering cards
+        // Also pause when hovering cards individually
         document.addEventListener('mouseover', function(e) {
             const card = e.target.closest('.portfolio-item');
             if (card && wrapper.contains(card)) {
-                stopAutoScroll();
+                isUserInteracting = true;
+                stopSmoothScroll();
             }
         });
 
@@ -1177,33 +1513,17 @@
             if (card && wrapper.contains(card)) {
                 const related = e.relatedTarget;
                 if (!related || !wrapper.contains(related)) {
-                    startAutoScroll();
+                    isUserInteracting = false;
+                    startSmoothScroll();
                 }
             }
         });
 
-        // ---- MANUAL SCROLL DETECTION (user scrolls via touch/drag) ----
-        carousel.addEventListener('scroll', function() {
-            const maxScroll = getMaxScroll();
-            // If user scrolls beyond the original set, reset to start
-            if (carousel.scrollLeft >= maxScroll) {
-                carousel.scrollLeft = 0;
-            }
-            if (!carousel._programmaticScroll) {
-                stopAutoScroll();
-                clearTimeout(carousel._userScrollTimer);
-                carousel._userScrollTimer = setTimeout(startAutoScroll, 5000);
-            }
-            carousel._programmaticScroll = false;
+        window.addEventListener('resize', () => {
+            setWidth = carousel.scrollWidth / 3;
         });
 
-        const originalScrollTo = carousel.scrollTo.bind(carousel);
-        carousel.scrollTo = function(options) {
-            carousel._programmaticScroll = true;
-            originalScrollTo(options);
-        };
-
-        startAutoScroll();
+        setTimeout(startSmoothScroll, 500);
 
         // ---- CONTACT FORM → WHATSAPP ----
         document.getElementById('contactForm').addEventListener('submit', function(e) {
